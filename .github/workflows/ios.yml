@@ -1,0 +1,75 @@
+name: iPhone build and tests
+on:
+  push:
+    paths-ignore: ["**.md", "docs/**"]
+  pull_request:
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+    inputs:
+      screenshot_previews:
+        description: Also print small JPEG previews of the UI test screenshots in the job log, base64-encoded
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  # Keyed by event too, so a manual run (for screenshot previews) doesn't cancel a push run of the same branch.
+  group: ios-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    # Pushes already cover branches in this repository; pull requests run for forks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: macos-26
+    timeout-minutes: 10
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+      - name: Core unit tests on macOS
+        run: swift test
+  ios:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify generated Xcode project
+        run: |
+          python3 scripts/generate-project.py
+          git diff --exit-code -- Vitals.xcodeproj
+      - name: Build simulator and device, test on an iPhone simulator
+        run: scripts/test-ios.sh
+      - name: Export UI test screenshots
+        if: always()
+        run: |
+          if [ -d TestResults.xcresult ]; then
+            xcrun xcresulttool export attachments --path TestResults.xcresult --output-path Screenshots || true
+          fi
+      - name: Screenshot previews in the log
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.screenshot_previews
+        run: |
+          shopt -s nullglob
+          if [ -f Screenshots/manifest.json ]; then cat Screenshots/manifest.json; echo; fi
+          for file in Screenshots/*.png Screenshots/*.jpeg Screenshots/*.jpg; do
+            sips -s format jpeg -s formatOptions 55 -Z 900 "$file" --out "$RUNNER_TEMP/preview.jpg" >/dev/null
+            echo "=====BEGIN $(basename "$file")====="
+            base64 -i "$RUNNER_TEMP/preview.jpg" | fold -w 1000
+            echo "=====END====="
+          done
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: Screenshots
+          if-no-files-found: ignore
+      - name: Test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults.xcresult
+          if-no-files-found: ignore
