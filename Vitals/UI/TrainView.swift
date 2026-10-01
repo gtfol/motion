@@ -32,7 +32,7 @@ struct TrainTab: View {
                 finishing = FinishRequest(session: session, end: end)
             }
         } message: { session in
-            Text("started \(session.startedAt.formatted(date: .abbreviated, time: .shortened)). your sets are saved. vitals doesn’t record heart rate while it’s closed, so that time shows as a gap.")
+            Text("started \(session.startedAt.formatted(date: .abbreviated, time: .shortened)). your sets are saved. motion doesn’t record heart rate while it’s closed, so that time shows as a gap.")
         }
         .sheet(item: $finishing, onDismiss: discardIfRequested) { request in
             FinishView(request: request) {

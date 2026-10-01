@@ -19,7 +19,7 @@ enum StrapStatus: Equatable, Sendable {
         switch self {
         case .noStrap: "no strap chosen"
         case .bluetoothOff: "disconnected · Bluetooth is off"
-        case .bluetoothDenied: "disconnected · Bluetooth access is off for vitals"
+        case .bluetoothDenied: "disconnected · Bluetooth access is off for motion"
         case .bluetoothUnavailable: "Bluetooth isn’t available"
         case .searching: "searching"
         case .connected: "connected"
@@ -154,7 +154,7 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         peripheral = target
         target.delegate = self
         status = hasConnected ? .reconnecting : .searching
-        // Even a strap the system already has connected (restored, or held by another app) needs vitals' own
+        // Even a strap the system already has connected (restored, or held by another app) needs motion' own
         // connect before its services can be used; for a connected strap, iOS reports it right away.
         if target.state != .connecting { central.connect(target, options: nil) }
     }

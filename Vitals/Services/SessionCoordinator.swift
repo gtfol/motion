@@ -195,7 +195,7 @@ import SwiftData
                 try store.setHealthState(session, .saved, workoutID: workoutID, message: "already in Apple Health; nothing new was written.")
             case .notAllowed:
                 try store.setHealthState(session, .notAllowed,
-                                         message: "allow vitals to write workouts in the Health app: tap your profile, then Apps → vitals.")
+                                         message: "allow motion to write workouts in the Health app: tap your profile, then Apps → motion.")
             case .unavailable:
                 try store.setHealthState(session, .unavailable) // the state reads "unavailable on this device"
             case .failed(let reason):
