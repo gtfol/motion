@@ -10,10 +10,10 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 
-# Adjustable identity. The bundle identifier is a project setting, not a settled App Store identifier.
+# Keep the registered bundle identifier stable across the motion rebrand and TestFlight updates.
 BUNDLE_IDENTIFIER = 'dev.gtfol.vitals'
 MARKETING_VERSION = '0.1'
-CURRENT_PROJECT_VERSION = '4'
+CURRENT_PROJECT_VERSION = '5'
 
 objects = {}
 def uid(name): return hashlib.sha256(name.encode()).hexdigest()[:24].upper()

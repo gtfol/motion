@@ -195,8 +195,8 @@ struct SessionDetailView: View {
             Button("cancel", role: .cancel) {}
         } message: {
             Text(session.healthState == .saved
-                 ? "its sets and heart rate are deleted from vitals. the copy in Apple Health stays; delete it in the Health app if you want."
-                 : "its sets and heart rate are deleted from vitals.")
+                 ? "its sets and heart rate are deleted from motion. the copy in Apple Health stays; delete it in the Health app if you want."
+                 : "its sets and heart rate are deleted from motion.")
         }
     }
 }

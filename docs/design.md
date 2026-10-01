@@ -1,6 +1,6 @@
 # Design notes
 
-vitals is a gtfol app with lowercase copy and a quiet interface, built for one-handed set entry and live numbers you can read mid-set. These notes record where its visual language and native patterns come from, and what was deliberately left out.
+motion is a gtfol app with lowercase copy and a quiet interface, built for one-handed set entry and live numbers you can read mid-set. These notes record where its visual language and native patterns come from, and what was deliberately left out.
 
 ## Sources reviewed
 
@@ -13,9 +13,9 @@ Reviewed on 2026-09-25 at these revisions:
 
 The live sites (capsule.gtfol.dev, freewrite.gtfol.dev, gtfol.dev) were blocked by the build environment's network policy, so the review used their source rather than the rendered pages.
 
-gtfol/ai is a written standard with starting values for colors, type and spacing ("defaults for new work, not claims that the reference apps use every value"). It isn't a published token package, and vitals doesn't claim an official gtfol/ai specification.
+gtfol/ai is a written standard with starting values for colors, type and spacing ("defaults for new work, not claims that the reference apps use every value"). It isn't a published token package, and motion doesn't claim an official gtfol/ai specification.
 
-## What vitals uses
+## What motion uses
 
 | Role | Value | Source |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ From capsule's iPhone app: the `capsuleScreen()`-style screen modifier, the 2 pt
 
 From freewrite: a clock computed from timestamps (its session timer uses a deadline), tabular numbers, and the white-on-#111 single lowercase letter icon style.
 
-## vitals' own choices
+## motion' own choices
 
 These aren't gtfol tokens:
 
@@ -45,8 +45,8 @@ These aren't gtfol tokens:
 
 ## Not taken from capsule, and why
 
-- Camera, photo processing, sign-in, Keychain, server and REST clients, idempotency against a server, and PostHog analytics: vitals is offline, has no account, and collects nothing.
-- Wardrobe models, category chips, product grids and fashion imagery: vitals is a training tool.
+- Camera, photo processing, sign-in, Keychain, server and REST clients, idempotency against a server, and PostHog analytics: motion is offline, has no account, and collects nothing.
+- Wardrobe models, category chips, product grids and fashion imagery: motion is a training tool.
 - The external payment link (`SupportLink`) and web legal links: not part of an offline v1.
 - The `apps/ios` folder layout: this repository holds only the iPhone app, so the project is at the root.
-- freewrite's system light/dark switching and iOS 26 target: vitals is dark-only like capsule, and targets iOS 17.
+- freewrite's system light/dark switching and iOS 26 target: motion is dark-only like capsule, and targets iOS 17.

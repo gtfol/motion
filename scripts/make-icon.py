@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Render vitals' app icon with Python's standard library: a white lowercase "v" on an opaque #111 canvas.
+"""Render motion's app icon with Python's standard library: a white lowercase "m" on an opaque #111 canvas.
 
 This follows gtfol's single-lowercase-letter marks (freewrite's white "f" on #111, capsule's black "c" on white).
-The outline is the "v" glyph of the bundled Lato Regular (SIL Open Font License, Vitals/Resources/Lato-OFL.txt),
+The outline is the "m" glyph of the bundled Lato Regular (SIL Open Font License, Vitals/Resources/Lato-OFL.txt),
 in font units (2000 per em), as extracted with fontTools' RecordingPen. Run from the repository root.
 """
 import struct
@@ -12,12 +12,27 @@ from pathlib import Path
 SIZE = 1024
 CANVAS = 17  # #111111
 MARK = 255
-GLYPH = [
-    ('moveTo', [(1009, 1013)]), ('lineTo', [(596, 0)]), ('lineTo', [(436, 0)]), ('lineTo', [(23, 1013)]),
-    ('lineTo', [(168, 1013)]), ('qCurveTo', [(190, 1013), (218, 991), (223, 976)]), ('lineTo', [(480, 324)]),
-    ('qCurveTo', [(492, 287), (510, 217), (518, 182)]), ('qCurveTo', [(526, 217), (544, 287), (557, 324)]),
-    ('lineTo', [(817, 976)]), ('qCurveTo', [(823, 992), (851, 1013), (870, 1013)]), ('closePath', []),
-]
+GLYPH = [('moveTo', ((141, 0),)),
+ ('lineTo', ((141, 1013),)),
+ ('lineTo', ((248, 1013),)),
+ ('qCurveTo', ((286, 1013), (295, 976))),
+ ('lineTo', ((308, 872),)),
+ ('qCurveTo', ((364, 941), (504, 1029), (596, 1029))),
+ ('qCurveTo', ((698, 1029), (825, 915), (853, 818))),
+ ('qCurveTo', ((875, 873), (944, 953), (1030, 1005), (1127, 1029), (1177, 1029))),
+ ('qCurveTo', ((1257, 1029), (1382, 978), (1469, 880), (1515, 737), (1515, 645))),
+ ('lineTo', ((1515, 0),)),
+ ('lineTo', ((1336, 0),)),
+ ('lineTo', ((1336, 645),)),
+ ('qCurveTo', ((1336, 764), (1232, 887), (1134, 887))),
+ ('qCurveTo', ((1090, 887), (1011, 856), (951, 796), (916, 705), (916, 645))),
+ ('lineTo', ((916, 0),)),
+ ('lineTo', ((737, 0),)),
+ ('lineTo', ((737, 645),)),
+ ('qCurveTo', ((737, 767), (639, 887), (545, 887))),
+ ('qCurveTo', ((479, 887), (367, 816), (320, 755))),
+ ('lineTo', ((320, 0),)),
+ ('closePath', ())]
 
 
 def flatten(ops, steps=16):
