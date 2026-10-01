@@ -99,6 +99,6 @@ None of it exercises a real strap, Bluetooth background behavior or real HealthK
 - `Vitals/Services`: `HeartRateMonitor` (CoreBluetooth), `HealthKitExporter` (HealthKit), and `SessionCoordinator`, which ties logging, the strap and Health together.
 - `Vitals/UI`: train, history, settings, and shared style.
 - `VitalsTests`: core, persistence and coordinator tests. `VitalsUITests`: the workout flow with screenshots.
-- `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's. `scripts/make-icon.py` renders the app icon.
+- `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's. `scripts/make-icon.py` renders the app icon. `scripts/extract-screenshot-previews.py` reads UI test screenshots out of a CI log.
 
 Out of scope for v1: Zepp/Huami sync, sleep, HRV and recovery, GPS and routes, Apple Watch, cloud sync and accounts, nutrition, program builders, plate math, RPE, notifications, widgets.
