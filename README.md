@@ -2,7 +2,7 @@
 
 A training log for iPhone: start a strength session, log exercises and sets, watch live heart rate from an Amazfit Helio Strap, finish once. The lift log works without a strap and without Apple Health.
 
-Native SwiftUI + SwiftData, iOS 17+, iPhone only. Apple frameworks only (SwiftUI, SwiftData, Charts, CoreBluetooth, HealthKit): no packages, no backend, no account, no analytics, no network calls. Everything works offline.
+Native SwiftUI + SwiftData, iOS 17+, iPhone only. SwiftUI, SwiftData, Charts, CoreBluetooth and HealthKit, with Supabase Swift 2.55.3 for optional Google sign-in and private cloud sync. Logging works offline. No analytics.
 
 ## Build and run
 
@@ -20,7 +20,7 @@ The App Store name is **motion: your fitness companion**; the iPhone name is **m
 - **Heart rate.** A compact strip above the set log shows workout time, connection state, last sample time, large live BPM, average and maximum, and a small chart. Heart rate never blocks set entry. A dropout shows as a gap; motion reconnects on its own and never fills in missing readings.
 - **Finish.** Review duration, exercises, completed working sets, volume, new bests and heart rate. motion saves locally first, then writes one workout to Apple Health if allowed, and shows the two results separately. A failed export can be retried without creating a duplicate.
 - **History** lists finished sessions with date, activity, duration, exercise and working-set counts, volume and heart rate. Detail shows the ordered sets (editable), new-best notes, the heart-rate chart and Apple Health status with retry. Exercise history shows past sets and bests.
-- **Settings:** lb/kg, default rest, optional age for an approximate zone tint, the strap (choose, reconnect, forget, battery when reported), and the Apple Health explanation.
+- **Settings:** Google sign-in, sync status, conflict review, sign-out and account deletion; lb/kg, default rest, optional age for an approximate zone tint, the strap (choose, reconnect, forget, battery when reported), and the Apple Health explanation.
 
 ## Calculations
 
@@ -61,7 +61,7 @@ Limits on iOS 17: the builder writes a workout after the fact, not a live workou
 
 ## Local data
 
-One SwiftData store (`Application Support/vitals.store`, CloudKit off) owns the catalog, routines, the active session, history and settings. Models: `Exercise`, `Routine`, `RoutineExercise`, `WorkoutSession`, `SessionExercise`, `LoggedSet`, `HRSample`, plus `AppPreferences`. Every record has a stable UUID; ordered children carry an explicit `order`. The schema is versioned (`VitalsSchemaV1`) for future migrations.
+The guest SwiftData store (`Application Support/vitals.store`, CloudKit off) owns the catalog, routines, the active session, history and settings. Models: `Exercise`, `Routine`, `RoutineExercise`, `WorkoutSession`, `SessionExercise`, `LoggedSet`, `HRSample`, plus `AppPreferences`. Signed-in accounts use separate stores at `Application Support/accounts/<user UUID>/vitals.store`; signing out returns to the unchanged guest log. First sign-in offers to copy the local log. See [cloud sync](docs/sync.md). Every record has a stable UUID; ordered children carry an explicit `order`. The schema is versioned (`VitalsSchemaV1`) for future migrations.
 
 Delete rules are deliberate:
 
@@ -101,4 +101,4 @@ None of it exercises a real strap, Bluetooth background behavior or real HealthK
 - `VitalsTests`: core, persistence and coordinator tests. `VitalsUITests`: the workout flow with screenshots.
 - `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's. `scripts/make-icon.py` renders the app icon.
 
-Out of scope for v1: Zepp/Huami sync, sleep, HRV and recovery, GPS and routes, Apple Watch, cloud sync and accounts, nutrition, program builders, plate math, RPE, notifications, widgets.
+Out of scope for v1: Zepp/Huami sync, sleep, HRV and recovery, GPS and routes, Apple Watch, nutrition, program builders, plate math, RPE, notifications, widgets.

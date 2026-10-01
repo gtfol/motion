@@ -24,6 +24,8 @@ enum StoreError: LocalizedError, Equatable {
     /// released crashes.
     let container: ModelContainer
     let context: ModelContext
+    var onSaved: (() -> Void)?
+    var applyingCloud = false
 
     init(container: ModelContainer) {
         self.container = container
@@ -34,6 +36,7 @@ enum StoreError: LocalizedError, Equatable {
     func save() throws {
         guard context.hasChanges else { return }
         do { try context.save() } catch { context.rollback(); throw StoreError.saveFailed }
+        if !applyingCloud { onSaved?() }
     }
 
     // MARK: Preferences and catalog
@@ -67,7 +70,8 @@ enum StoreError: LocalizedError, Equatable {
         guard !preferences.catalogSeeded else { return }
         if try context.fetchCount(FetchDescriptor<Exercise>()) == 0 {
             for (offset, item) in Self.starterCatalog.enumerated() {
-                context.insert(Exercise(name: item.name, category: item.category, isBodyweight: item.bodyweight,
+                let id = UUID(uuidString: String(format: "8BB72B11-63B6-4BF4-9865-%012d", offset + 1))!
+                context.insert(Exercise(id: id, name: item.name, category: item.category, isBodyweight: item.bodyweight,
                                         createdAt: Date(timeIntervalSince1970: TimeInterval(offset))))
             }
         }

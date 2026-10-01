@@ -45,8 +45,8 @@ These aren't gtfol tokens:
 
 ## Not taken from capsule, and why
 
-- Camera, photo processing, sign-in, Keychain, server and REST clients, idempotency against a server, and PostHog analytics: motion is offline, has no account, and collects nothing.
+- Camera, photo processing and PostHog analytics are not used. Optional Google sign-in and cloud sync now use Supabase directly, with Keychain sessions and idempotent writes; this differs from Capsule’s Better Auth web backend.
 - Wardrobe models, category chips, product grids and fashion imagery: motion is a training tool.
-- The external payment link (`SupportLink`) and web legal links: not part of an offline v1.
+- The external payment link (`SupportLink`) and web legal links: not included in this native app.
 - The `apps/ios` folder layout: this repository holds only the iPhone app, so the project is at the root.
 - freewrite's system light/dark switching and iOS 26 target: motion is dark-only like capsule, and targets iOS 17.

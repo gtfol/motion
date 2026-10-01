@@ -9,6 +9,6 @@ let package = Package(
     targets: [
         .target(name: "VitalsCore", path: "Vitals/Core"),
         .testTarget(name: "VitalsCoreTests", dependencies: ["VitalsCore"], path: "VitalsTests",
-                    exclude: ["PersistenceTests.swift", "CoordinatorTests.swift"])
+                    exclude: ["PersistenceTests.swift", "CoordinatorTests.swift", "SyncPersistenceTests.swift"])
     ]
 )

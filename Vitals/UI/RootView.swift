@@ -9,6 +9,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 /// All tabs stay alive so switching never loses a tab's place.
 struct RootView: View {
     @Environment(SessionCoordinator.self) private var coordinator
+    @Environment(AppLaunch.self) private var launch
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab: AppTab = .train
 
@@ -26,12 +27,13 @@ struct RootView: View {
         .background(VitalsStyle.canvas)
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { coordinator.heartbeat() }
-            if phase == .active { coordinator.refreshHealthAccess() }
+            if phase == .active { coordinator.refreshHealthAccess(); launch.sync?.schedule(immediate: true) }
         }
         .task {
             // A heartbeat lets an interrupted session be finished at the time vitals last ran, not at relaunch.
             while !Task.isCancelled {
                 coordinator.heartbeat()
+                launch.sync?.schedule()
                 try? await Task.sleep(for: .seconds(30))
             }
         }

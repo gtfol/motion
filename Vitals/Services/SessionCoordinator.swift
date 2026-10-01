@@ -39,10 +39,10 @@ import SwiftData
 
     /// Recovers local state first: interrupted exports become retryable and an unfinished session is restored,
     /// never replaced by a new one.
-    func launch() {
+    func launch(seedCatalog: Bool = true) {
         do {
             try store.recoverAfterLaunch()
-            try store.seedCatalogIfNeeded()
+            if seedCatalog { try store.seedCatalogIfNeeded() }
             if let session = try store.activeSession() {
                 activeSession = session
                 recoveredSession = session

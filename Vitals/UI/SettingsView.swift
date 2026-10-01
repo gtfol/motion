@@ -12,6 +12,7 @@ struct SettingsTab: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 36) {
+                    AccountSettings()
                     units
                     rest
                     age
@@ -151,7 +152,7 @@ struct SettingsTab: View {
                     "each finished workout is saved to Apple Health once, with its type, start and end, and the heart-rate samples motion received. sets and reps stay in motion.",
                     "motion doesn’t write calories and doesn’t promise activity-ring credit.",
                     "motion reads workouts only to find one it already saved, so a retry can’t create a duplicate.",
-                    "without access, everything still works here and nothing leaves this iPhone."
+                    "without Apple Health access, everything still works in motion. cloud sync is a separate choice."
                 ])
                 Spacer()
                 Text(accessLabel).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
@@ -186,7 +187,7 @@ struct SettingsTab: View {
     private var about: some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeading(title: "motion", detail: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
-            Text("everything stays on this iPhone: no account, no network, no analytics. Apple Health gets a copy only if you allow it.")
+            Text("your log is saved on this iPhone. sign in to sync it privately across your devices. no analytics. Apple Health gets a copy only if you allow it.")
                 .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             if let message = coordinator.message {
                 Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)

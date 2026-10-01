@@ -2,7 +2,12 @@
 
 ## What has been checked
 
-Status as of September 25, 2026. Nothing has been installed on an iPhone yet.
+Status as of October 1, 2026. Motion 0.1 (5) is accepted and Testing in TestFlight. The following sync work is on the next-build branch and has not been uploaded.
+
+- **Cloud sync:** 35 core tests and 53 iOS unit tests pass locally, including six two-store/persistence sync scenarios. The release device build passes. PostgreSQL account-isolation/CAS/tombstone tests and three Edge Function authorization tests pass. Live Google OAuth and authenticated cross-installation sync still need the provider configuration and Data API activation; see [sync setup](sync.md).
+- **Current local UI run:** the existing workout test failed when Simulator failed to focus a set-entry keyboard. Manual inspection confirms the new Google-only account section renders. A fresh CI run is required before release; this is not a passed UI test.
+
+Historical baseline checks:
 
 - **Core logic, `swift test`:** 27 tests pass with Swift 6.3.3 in Swift 6 language mode with warnings as errors, on Linux (official `swift:6.3.3-noble` toolchain), and on macOS 26 in GitHub Actions. They cover unit round trips, input parsing, bodyweight text, clocks and the rest timer, Epley limits, volume, records (baseline, ties, warm-ups, incomplete, bodyweight, edits and deletes, unit switching), exercise history, previous-session pairing, workout summaries, Heart Rate Measurement parsing (8/16-bit, contact, energy, RR, truncated packets, slices), battery, statistics, gaps, chart thinning, zones, the Health payload window, sync identifiers and recovery times.
 - **Bluetooth and HealthKit services:** `HeartRateMonitor` and `HealthKitExporter` were type-checked with the same compiler settings against stand-in `CoreBluetooth` and `HealthKit` modules that mirror the API signatures and `Sendable` annotations Apple documents. That found a real Swift 6 data-race error, which is fixed. Both now also compile against the iOS SDK in CI, with the same settings.

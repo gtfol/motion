@@ -1,0 +1,5 @@
+project_id = "motion"
+
+[functions.delete-account]
+# Authentication is verified by getUser inside the function, including publishable-key clients.
+verify_jwt = false

@@ -112,6 +112,16 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         connectToChosenStrap()
     }
 
+    /// Release the old account's monitor without changing its saved strap selection.
+    func shutdown() {
+        retry?.cancel(); retry = nil
+        onReading = nil; onSelectionChange = nil
+        central?.delegate = nil; peripheral?.delegate = nil
+        central?.stopScan()
+        if let peripheral { central?.cancelPeripheralConnection(peripheral) }
+        peripheral = nil; central = nil
+    }
+
     func forget() {
         retry?.cancel()
         if let peripheral { central?.cancelPeripheralConnection(peripheral) }
