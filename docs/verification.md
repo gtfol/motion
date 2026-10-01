@@ -4,8 +4,9 @@
 
 Status as of October 1, 2026. Motion 0.1 (5) is accepted and Testing in TestFlight. The following sync work is on the next-build branch and has not been uploaded.
 
-- **Cloud sync:** 35 core tests and 53 iOS unit tests pass locally, including six two-store/persistence sync scenarios. The release device build passes. PostgreSQL account-isolation/CAS/tombstone tests and three Edge Function authorization tests pass. Live Google OAuth and authenticated cross-installation sync still need the provider configuration and Data API activation; see [sync setup](sync.md).
-- **Current local UI run:** the existing workout test failed when Simulator failed to focus a set-entry keyboard. Manual inspection confirms the new Google-only account section renders. A fresh CI run is required before release; this is not a passed UI test.
+- **Cloud sync:** 37 core tests and 56 iOS unit tests pass locally, including seven two-store/persistence sync scenarios. The release device build passes. PostgreSQL account-isolation/CAS/tombstone tests and three Edge Function authorization tests pass, also in [backend CI](https://github.com/gtfol/motion/actions/runs/36930745337). Live Google OAuth and authenticated cross-installation sync still need the provider configuration and Data API activation; see [sync setup](sync.md).
+- **Sync build CI:** the [full iPhone workflow](https://github.com/gtfol/motion/actions/runs/36931366102) passed for `25d30a4`, including simulator/device builds and the existing workout UI test. The earlier local keyboard-focus failure did not recur in that run.
+- **Iron-inspired color pass:** the simulator build and workout UI flow pass locally on iPhone 17 Pro / iOS 26.5. The flow checks set entry, completion, rest placement, saving, history and unit conversion. Eight screenshots were retained; the train, active workout and settings screens were visually inspected. The semantic text colors have at least 6.9:1 contrast against the charcoal canvas, and the primary button's dark label has 7.6:1 against its blue fill. This pass changes presentation only; no logo concept has replaced the app icon.
 
 Historical baseline checks:
 

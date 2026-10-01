@@ -1,6 +1,6 @@
 # Optional cloud sync
 
-Motion uses its own Supabase project, `ljjzzspdphikxmubscef`, named **motion**, under `motion@gtfol.dev`’s organization. Capsule’s users, data and credentials are not reused. The native app uses Google OAuth with Supabase PKCE and a namespaced Keychain session. No Apple or email sign-in UI is included.
+Motion uses its own Supabase project, `ljjzzspdphikxmubscef`, named **motion**, under `motion@gtfol.dev`’s organization. Capsule’s users, data and credentials are not reused. The native app uses Google OAuth with Supabase PKCE and a namespaced Keychain session. No Apple or email sign-in UI is included. Email authentication is disabled in the hosted project; Apple and anonymous authentication remain disabled.
 
 ## Data and account boundaries
 
@@ -21,7 +21,7 @@ Writes go only through `motion_apply`; authenticated clients cannot directly cha
 
 1. Apply `supabase/migrations` in order to Motion’s project. The initial migration was applied through the project SQL editor on October 1, 2026.
 2. Deploy `supabase/functions/delete-account` with the configuration in `supabase/config.toml`. It performs its own current-user verification; legacy-secret-only gateway verification is disabled for compatibility with current JWT signing keys.
-3. Configure Google OAuth with callback `https://ljjzzspdphikxmubscef.supabase.co/auth/v1/callback`. Enable Google, preserve nonce checks, and disable unused email authentication.
+3. Configure a Google OAuth **Web application** client with callback `https://ljjzzspdphikxmubscef.supabase.co/auth/v1/callback`. Enter its client ID (ending in `.apps.googleusercontent.com`) and matching client secret in Supabase, enable Google, and preserve nonce checks. An email address or database password is not an OAuth credential. Keep unused email authentication disabled.
 4. Allow only the native redirect `dev.gtfol.vitals://auth/callback` for the app. The registered bundle ID stays unchanged from TestFlight.
 5. Verify real Google sign-in and a restore on a separate installation, account switching, offline retry, and deletion using a disposable account before a sync TestFlight upload. Update App Store privacy declarations to cover optional account-linked fitness/heart-rate data and Google account information.
 
@@ -31,4 +31,4 @@ Writes go only through `motion_apply`; authenticated clients cannot directly cha
 - `SyncPersistenceTests` uses two independent on-disk stores and a simulated server to check a full workout/routine/heart-rate restore, offline queue restart, lost acknowledgements, deletion conflicts, child edits and local Health export state, active-workout exclusion and wrong-account journal rejection.
 - `supabase/tests/bootstrap.sql`, the migration, and `supabase/tests/sync.sql` run in order in an **empty disposable PostgreSQL database only**. Never apply the bootstrap to Supabase or an existing database. Assertions cover account isolation, RLS, denied direct writes, compare-and-swap, retries, tombstones, cursors and account-delete cascades.
 - `deno test --allow-env supabase/functions/delete-account/index_test.ts` checks missing/invalid authentication and that a submitted victim ID cannot select the deleted account. Requests are mocked; no real account is deleted by these tests.
-- The deployed endpoint has been checked with missing and invalid tokens; both return 401. Live Google sign-in and a real authenticated restore remain pending provider configuration. The new project’s Data API also returned PGRST002 during setup and must be healthy before release.
+- The deployed endpoint has been checked with missing and invalid tokens; both return 401. Live Google sign-in and a real authenticated restore remain pending provider configuration. The new project’s Data API is disabled; enabling it is prepared in the dashboard and awaiting confirmation. Its RPC endpoints returned PGRST002 while disabled and must be healthy before release.
