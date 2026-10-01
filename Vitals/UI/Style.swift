@@ -1,17 +1,20 @@
 import SwiftUI
 import UIKit
 
-/// vitals' tokens. Canvas, text, secondary, divider, surface, caution, and error are the dark column of gtfol's
-/// design standard (gtfol/ai DESIGN.md) as used by capsule's iPhone app. The larger numeric sizes and the zone
-/// ramp are vitals' own choices for readable live numbers; they are not a published gtfol token set.
+/// Motion's Iron-inspired palette: blue actions, red heart rate, yellow rest and records.
+/// Lighter foreground variants keep small labels readable on charcoal. Labels and symbols
+/// carry meaning as well as color, including the green completed-set checkmark.
 enum VitalsStyle {
-    static let canvas = Color.black
-    static let text = Color(white: 238 / 255)
-    static let secondary = Color(white: 170 / 255)
-    static let divider = Color(white: 44 / 255)
-    static let surface = Color(white: 17 / 255)
-    static let caution = Color(red: 212 / 255, green: 178 / 255, blue: 106 / 255)
-    static let error = Color(red: 239 / 255, green: 150 / 255, blue: 150 / 255)
+    static let canvas = Color(red: 24 / 255, green: 24 / 255, blue: 26 / 255)
+    static let text = Color(white: 244 / 255)
+    static let secondary = Color(red: 180 / 255, green: 181 / 255, blue: 188 / 255)
+    static let divider = Color(red: 58 / 255, green: 59 / 255, blue: 64 / 255)
+    static let surface = Color(red: 36 / 255, green: 37 / 255, blue: 41 / 255)
+    static let accent = Color(red: 104 / 255, green: 173 / 255, blue: 255 / 255)
+    static let heart = Color(red: 255 / 255, green: 119 / 255, blue: 123 / 255)
+    static let success = Color(red: 118 / 255, green: 214 / 255, blue: 152 / 255)
+    static let caution = Color(red: 242 / 255, green: 203 / 255, blue: 66 / 255)
+    static let error = heart
 
     static let body = Font.custom("Lato-Regular", size: 15, relativeTo: .subheadline)
     static let heading = Font.custom("Lato-Regular", size: 17, relativeTo: .headline)
@@ -25,13 +28,15 @@ enum VitalsStyle {
 
     static let gutter: CGFloat = 20
 
-    /// Approximate zone tint. Zones 1–3 stay neutral; only high intensity gets color, and the zone is always
-    /// also written out, so color is never the only signal.
+    /// Approximate intensity is always also labeled with its zone number.
     static func zoneTint(_ zone: Int?) -> Color {
         switch zone {
+        case 1?: secondary
+        case 2?: accent
+        case 3?: success
         case 4?: caution
         case 5?: error
-        default: text
+        default: heart
         }
     }
 }
@@ -40,18 +45,18 @@ extension View {
     func vitalsScreen() -> some View {
         font(VitalsStyle.body)
             .foregroundStyle(VitalsStyle.text)
-            .tint(VitalsStyle.text)
+            .tint(VitalsStyle.accent)
             .background(VitalsStyle.canvas)
             .toolbarBackground(VitalsStyle.canvas, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
     }
 
-    /// capsule's primary action: a solid off-white button with a 2 pt radius.
+    /// A clear blue primary action with a dark label for contrast.
     func vitalsPrimaryAction() -> some View {
         buttonStyle(.borderedProminent)
-            .buttonBorderShape(.roundedRectangle(radius: 2))
+            .buttonBorderShape(.roundedRectangle(radius: 10))
             .controlSize(.large)
-            .tint(VitalsStyle.text)
+            .tint(VitalsStyle.accent)
             .foregroundStyle(VitalsStyle.canvas)
     }
 
@@ -141,6 +146,7 @@ struct InfoButton: View {
 
 /// A plain text action at least 44 pt tall, the default control on quiet screens.
 struct TextAction: View {
+    @Environment(\.isEnabled) private var isEnabled
     let title: String
     var role: ButtonRole?
     var secondary = false
@@ -155,7 +161,8 @@ struct TextAction: View {
             Text(title).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(secondary ? VitalsStyle.secondary : VitalsStyle.text)
+        .foregroundStyle(role == .destructive ? VitalsStyle.error : secondary ? VitalsStyle.secondary : VitalsStyle.accent)
+        .opacity(isEnabled ? 1 : 0.45)
     }
 }
 

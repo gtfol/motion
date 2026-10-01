@@ -20,7 +20,7 @@ struct HistoryTab: View {
                     ForEach(Page.allCases) { item in
                         Button { page = item } label: {
                             Text(item.rawValue).font(VitalsStyle.caption)
-                                .foregroundStyle(page == item ? VitalsStyle.text : VitalsStyle.secondary)
+                                .foregroundStyle(page == item ? VitalsStyle.accent : VitalsStyle.secondary)
                                 .frame(minHeight: 44).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -349,7 +349,7 @@ private struct ExerciseEditor: View {
                 Section {
                     TextField("name", text: $name)
                     TextField("muscle or category (optional)", text: $category)
-                    Toggle("bodyweight movement", isOn: $bodyweight).tint(VitalsStyle.secondary)
+                    Toggle("bodyweight movement", isOn: $bodyweight).tint(VitalsStyle.accent)
                 } footer: {
                     Text("for bodyweight movements, the load you enter is added weight. they’re tracked but not compared for records yet.")
                         .font(VitalsStyle.caption)

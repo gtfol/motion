@@ -32,7 +32,7 @@ import SwiftUI
             }
             .font(VitalsStyle.body)
             .foregroundStyle(VitalsStyle.text)
-            .tint(VitalsStyle.text)
+            .tint(VitalsStyle.accent)
             .preferredColorScheme(.dark)
         }
     }

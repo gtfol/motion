@@ -61,11 +61,11 @@ private struct BottomNavigation: View {
                         HStack(spacing: 6) {
                             Text(item.rawValue)
                             if item == .train, coordinator.activeSession != nil, tab != .train {
-                                Circle().fill(VitalsStyle.text).frame(width: 5, height: 5)
+                                Circle().fill(VitalsStyle.success).frame(width: 5, height: 5)
                             }
                         }
                         .font(VitalsStyle.caption)
-                        .foregroundStyle(tab == item ? VitalsStyle.text : VitalsStyle.secondary)
+                        .foregroundStyle(tab == item ? VitalsStyle.accent : VitalsStyle.secondary)
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                     }

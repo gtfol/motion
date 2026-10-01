@@ -67,7 +67,7 @@ private struct StartView: View {
             VStack(alignment: .leading, spacing: 36) {
                 HeartRatePanel(session: nil)
                 VStack(alignment: .leading, spacing: 12) {
-                    Button { coordinator.start(.strength) } label: { Text("start strength").frame(maxWidth: .infinity) }
+                    Button { coordinator.start(.strength) } label: { Label("start strength", systemImage: "dumbbell.fill").frame(maxWidth: .infinity) }
                         .vitalsPrimaryAction()
                         .accessibilityIdentifier("start-strength")
                     Text("log exercises and sets. heart rate is added when your strap is connected, and the workout works without it.")

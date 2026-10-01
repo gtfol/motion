@@ -105,7 +105,7 @@ struct SessionClock: View {
                 Text("started \(session.startedAt.formatted(date: .omitted, time: .shortened))")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                 Spacer()
-                Text(elapsed).font(VitalsStyle.clock).monospacedDigit()
+                Text(elapsed).font(VitalsStyle.clock).monospacedDigit().foregroundStyle(VitalsStyle.accent)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("workout time \(elapsed)")
@@ -128,8 +128,9 @@ struct RestBar: View {
                     let elapsed = ClockText.duration(timer.elapsed(at: context.date))
                     HStack(spacing: 20) {
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(over ? "rest done" : "rest").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                            Text(over ? "rest done" : "rest").font(VitalsStyle.caption).foregroundStyle(over ? VitalsStyle.success : VitalsStyle.caution)
                             Text("\(elapsed) / \(ClockText.duration(timer.target))").font(VitalsStyle.clock).monospacedDigit()
+                                .foregroundStyle(over ? VitalsStyle.success : VitalsStyle.caution)
                         }
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(over ? "rest done, \(elapsed) since the last set"
@@ -143,7 +144,7 @@ struct RestBar: View {
                 .padding(.horizontal, VitalsStyle.gutter)
                 .padding(.vertical, 6)
             }
-            .background(VitalsStyle.canvas)
+            .background(VitalsStyle.caution.opacity(0.06).background(VitalsStyle.canvas))
         }
     }
 }

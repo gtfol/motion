@@ -17,6 +17,9 @@ struct HeartRatePanel: View {
             let bpm = fresh ? reading?.measurement.bpm : nil
             let zone = bpm.flatMap { HeartRateZone.zone(bpm: $0, age: coordinator.age) }
             VStack(alignment: .leading, spacing: 4) {
+                Label("heart rate", systemImage: "heart.fill")
+                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.heart)
+                    .accessibilityHidden(true)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(bpm.map { "\($0)" } ?? "–")
                         .font(VitalsStyle.live).monospacedDigit()
@@ -104,7 +107,7 @@ struct HeartRateChart: View {
                     }
                 }
             }
-            .foregroundStyle(VitalsStyle.text)
+            .foregroundStyle(VitalsStyle.heart)
             .chartXScale(domain: start...max(end, start.addingTimeInterval(60)))
             .chartYScale(domain: (low - 5)...(high + 5))
             .chartXAxis(compact ? .hidden : .automatic)

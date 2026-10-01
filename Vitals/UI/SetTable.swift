@@ -29,7 +29,7 @@ struct ExerciseCard: View {
         let labels = Self.labels(for: sets)
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                Text(entry.name).font(VitalsStyle.heading).accessibilityAddTraits(.isHeader)
+                Text(entry.name).font(VitalsStyle.heading).foregroundStyle(VitalsStyle.accent).accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 8)
                 menu
             }
@@ -186,7 +186,7 @@ private struct SetRow: View {
                 Button { Keyboard.dismiss(); coordinator.toggleCompleted(set) } label: {
                     Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 26, weight: .light))
-                        .foregroundStyle(set.completed ? VitalsStyle.text : VitalsStyle.secondary)
+                        .foregroundStyle(set.completed ? VitalsStyle.success : VitalsStyle.secondary)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -200,6 +200,7 @@ private struct SetRow: View {
                     .padding(.leading, 44)
             }
         }
+        .background(set.completed ? VitalsStyle.success.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
         .accessibilityAction(named: "delete set") { delete() }
     }
 
@@ -233,9 +234,9 @@ struct NumberField: View {
             .monospacedDigit()
             .focused($focused)
             .frame(width: width, height: 44)
-            .background(VitalsStyle.surface, in: RoundedRectangle(cornerRadius: 2))
+            .background(VitalsStyle.surface, in: RoundedRectangle(cornerRadius: 6))
             .overlay(alignment: .bottom) {
-                Rectangle().fill(focused ? VitalsStyle.text : VitalsStyle.divider).frame(height: 1)
+                Rectangle().fill(focused ? VitalsStyle.accent : VitalsStyle.divider).frame(height: focused ? 2 : 1)
             }
             .accessibilityLabel(label)
             .accessibilityValue(value.isEmpty ? placeholder : value)
