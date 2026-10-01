@@ -161,4 +161,18 @@ final class SyncPersistenceTests: XCTestCase {
         XCTAssertNil(cloud.records[SyncKey(kind: .workout, id: workout.id)])
         XCTAssertTrue(workout.isActive)
     }
+
+    @MainActor func testFreshInstallDoesNotReseedAnAccountContainingOnlyDeletedCatalogEntries() async throws {
+        let cloud = MemoryCloud()
+        let id = UUID(uuidString: "8BB72B11-63B6-4BF4-9865-000000000001")!
+        let key = SyncKey(kind: .exercise, id: id)
+        cloud.records[key] = CloudRecord(kind: .exercise, id: id, revision: 1, body: nil)
+        cloud.revision = 1
+        let (store, sync, _) = try phone(owner: UUID(), cloud: cloud)
+        await sync.syncNow()
+        XCTAssertNil(sync.message)
+        XCTAssertTrue(try store.exercises().isEmpty)
+        XCTAssertNil(cloud.records[key]?.body)
+        XCTAssertTrue(try store.preferences().catalogSeeded)
+    }
 }

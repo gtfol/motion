@@ -92,4 +92,12 @@ final class SyncTests: XCTestCase {
         XCTAssertThrowsError(try SyncDocument.validate(record))
     }
 
+    func testAnUnseenTombstoneConflictsWithAnOfflineCreationInsteadOfResurrectingIt() throws {
+        var phone = SyncLedger(owner: owner)
+        phone.prepare(local: [key: body(5)])
+        XCTAssertEqual(try phone.receive(record(2, nil), local: [key: body(5)]), .conflict)
+        XCTAssertNil(phone.pending[key])
+        XCTAssertEqual(phone.conflicts[key]?.local, body(5))
+    }
+
 }

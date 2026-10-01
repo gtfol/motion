@@ -120,7 +120,7 @@ struct SyncLedger: Codable, Equatable, Sendable {
         guard remote.revision > newest else { return .unchanged }
         let base = records[key]?.body
         let current = local[key]
-        if current == remote.body || base == remote.body {
+        if current == remote.body || (records[key] != nil && base == remote.body) {
             records[key] = remote; conflicts[key] = nil
             prepare(local: local)
             return .unchanged

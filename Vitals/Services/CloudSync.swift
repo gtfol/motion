@@ -21,6 +21,7 @@ struct SyncReply: Codable, Sendable { var applied: Bool; var record: CloudRecord
     @ObservationIgnored private var running: Task<Void, Never>?
     @ObservationIgnored private var stopped = false
     @ObservationIgnored private var changed = false
+    @ObservationIgnored private var needsPull = false
 
     init(owner: UUID, store: WorkoutStore, directory: URL, transport: any SyncTransport) throws {
         self.owner = owner; self.store = store; self.transport = transport
@@ -39,12 +40,15 @@ struct SyncReply: Codable, Sendable { var applied: Bool; var record: CloudRecord
     func schedule(immediate: Bool = false) {
         guard !stopped else { return }
         changed = true
+        needsPull = needsPull || immediate
         guard !busy else { return }
         scheduled?.cancel()
         scheduled = Task { [weak self] in
             if !immediate { try? await Task.sleep(for: .seconds(2)) }
             guard !Task.isCancelled, let self else { return }
-            self.running = Task { await self.syncNow() }
+            let pullIfUnchanged = self.needsPull
+            self.needsPull = false
+            self.running = Task { await self.syncNow(pullIfUnchanged: pullIfUnchanged) }
         }
     }
 
@@ -57,16 +61,21 @@ struct SyncReply: Codable, Sendable { var applied: Bool; var record: CloudRecord
     }
 
     /// Public for deterministic transport tests. UI uses schedule so overlapping requests coalesce.
-    func syncNow() async {
+    func syncNow(pullIfUnchanged: Bool = true) async {
         guard !busy, !stopped else { return }
         busy = true; message = nil
         defer { busy = false }
+        var firstPass = true
         do {
             repeat {
                 changed = false
                 try check()
                 // Persist request identities before any upload. A timeout can then retry exactly once.
                 var next = ledger; next.prepare(local: try store.syncSnapshot()); try persist(next)
+                // Live heart-rate batches and Health export state are local-only changes. Do not
+                // send a request every time those save; foreground/manual refreshes still pull.
+                if firstPass && !pullIfUnchanged && ledger.pending.isEmpty { return }
+                firstPass = false
                 while true {
                     let page = try await transport.pull(after: ledger.cursor)
                     try check()
@@ -77,7 +86,11 @@ struct SyncReply: Codable, Sendable { var applied: Bool; var record: CloudRecord
                     if page.count < 100 { break }
                 }
                 // Only seed after the first successful restore, to avoid creating defaults on top of cloud data.
-                try store.seedCatalogIfNeeded()
+                if !ledger.records.isEmpty, try !store.preferences().catalogSeeded {
+                    // Even an account containing only tombstones has already had a catalog.
+                    // Missing preferences must not resurrect deleted starter exercises.
+                    try store.updatePreferences { $0.catalogSeeded = true }
+                } else { try store.seedCatalogIfNeeded() }
                 next = ledger; next.prepare(local: try store.syncSnapshot()); try persist(next)
                 let requests = ledger.pending.values.sorted {
                     let kinds: [SyncKind] = [.exercise, .routine, .workout, .preferences]

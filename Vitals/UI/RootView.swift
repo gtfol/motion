@@ -33,7 +33,7 @@ struct RootView: View {
             // A heartbeat lets an interrupted session be finished at the time vitals last ran, not at relaunch.
             while !Task.isCancelled {
                 coordinator.heartbeat()
-                launch.sync?.schedule()
+                launch.sync?.schedule(immediate: true)
                 try? await Task.sleep(for: .seconds(30))
             }
         }
