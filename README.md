@@ -99,6 +99,7 @@ None of it exercises a real strap, Bluetooth background behavior or real HealthK
 - `Vitals/Services`: `HeartRateMonitor` (CoreBluetooth), `HealthKitExporter` (HealthKit), and `SessionCoordinator`, which ties logging, the strap and Health together.
 - `Vitals/UI`: train, history, settings, and shared style.
 - `VitalsTests`: core, persistence and coordinator tests. `VitalsUITests`: the workout flow with screenshots.
-- `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's. `scripts/make-icon.py` renders the app icon.
+- `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's.
+- `Vitals/Assets.xcassets/AppIcon.appiconset/AppIcon.png`: the approved runner illustration, committed as an opaque 1024 × 1024 app icon. Xcode generates the smaller sizes from this asset.
 
 Out of scope for v1: Zepp/Huami sync, sleep, HRV and recovery, GPS and routes, Apple Watch, nutrition, program builders, plate math, RPE, notifications, widgets.
