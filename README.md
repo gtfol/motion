@@ -2,7 +2,7 @@
 
 A training log for iPhone: start a strength session, log exercises and sets, watch live heart rate from an Amazfit Helio Strap, finish once. The lift log works without a strap and without Apple Health.
 
-Native SwiftUI + SwiftData, iOS 17+, iPhone only. SwiftUI, SwiftData, Charts, CoreBluetooth and HealthKit, with Supabase Swift 2.55.3 for optional Google sign-in and private cloud sync. Logging works offline. No analytics.
+Native SwiftUI + SwiftData, iOS 17+, iPhone only. SwiftUI, SwiftData, Charts, CoreBluetooth and HealthKit, with optional Google sign-in through Motion’s Vercel backend and private workout storage in Supabase PostgreSQL. Logging works offline. No analytics.
 
 ## Build and run
 

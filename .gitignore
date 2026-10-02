@@ -6,3 +6,10 @@ DerivedData/
 xcuserdata/
 *.xcresult
 Screenshots/
+node_modules/
+.next/
+.vercel/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo

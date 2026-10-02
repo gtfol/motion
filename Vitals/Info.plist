@@ -10,8 +10,7 @@
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
 <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
-<key>MotionSupabaseURL</key><string>https://ljjzzspdphikxmubscef.supabase.co</string>
-<key>MotionSupabasePublishableKey</key><string>sb_publishable_griIN6x6xxFF5pMfKNmqDQ_0dNIyiaS</string>
+<key>MotionServerURL</key><string>https://motion.gtfol.dev</string>
 <key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>dev.gtfol.vitals</string></array></dict></array>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>ITSAppUsesNonExemptEncryption</key><false/>

@@ -6,12 +6,13 @@ import SwiftData
     var records: [SyncKey: CloudRecord] = [:]
     var mutations: [UUID: SyncReply] = [:]
     var offline = false
+    var pageSize = 100
     var loseNextAcknowledgement = false
     var revision: Int64 = 0
     var beforeReply: (() -> Void)?
     func pull(after: Int64) async throws -> [CloudRecord] {
         if offline { throw SyncFailure.unavailable }
-        return Array(records.values.filter { $0.revision > after }.sorted { $0.revision < $1.revision }.prefix(100))
+        return Array(records.values.filter { $0.revision > after }.sorted { $0.revision < $1.revision }.prefix(pageSize))
     }
     func get(_ key: SyncKey) async throws -> CloudRecord? { records[key] }
     func apply(_ mutation: SyncMutation) async throws -> SyncReply {
@@ -57,6 +58,7 @@ final class SyncPersistenceTests: XCTestCase {
         try first.save()
         await a.syncNow()
         XCTAssertNil(a.message)
+        cloud.pageSize = 2 // Short pages can still have more records on the server.
         let (second, b, _) = try phone(owner: owner, cloud: cloud)
         await b.syncNow()
         XCTAssertNil(b.message)

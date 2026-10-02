@@ -70,11 +70,7 @@ appSources = phase('app-sources', 'PBXSourcesBuildPhase', app_sources)
 testSources = phase('test-sources', 'PBXSourcesBuildPhase', test_sources)
 uitestSources = phase('uitest-sources', 'PBXSourcesBuildPhase', uitest_sources)
 resources = phase('resources', 'PBXResourcesBuildPhase', [assets] + bundled)
-supabasePackage = add('supabase-package', {'isa': 'XCRemoteSwiftPackageReference', 'repositoryURL': 'https://github.com/supabase/supabase-swift.git',
-    'requirement': {'kind': 'exactVersion', 'version': '2.55.3'}})
-supabaseProduct = add('supabase-product', {'isa': 'XCSwiftPackageProductDependency', 'package': supabasePackage, 'productName': 'Supabase'})
-supabaseBuild = add('supabase-build', {'isa': 'PBXBuildFile', 'productRef': supabaseProduct})
-appFrameworks = add('app-frameworks', {'isa': 'PBXFrameworksBuildPhase', 'buildActionMask': '2147483647', 'files': [supabaseBuild], 'runOnlyForDeploymentPostprocessing': '0'})
+appFrameworks = phase('app-frameworks', 'PBXFrameworksBuildPhase', [])
 testFrameworks = phase('test-frameworks', 'PBXFrameworksBuildPhase', [])
 uitestFrameworks = phase('uitest-frameworks', 'PBXFrameworksBuildPhase', [])
 
@@ -118,7 +114,7 @@ testConfigs = configs('tests', testSettings)
 uitestConfigs = configs('uitests', uitestSettings)
 appTarget = add('app-target', {'isa': 'PBXNativeTarget', 'buildConfigurationList': appConfigs, 'buildPhases': [appSources, appFrameworks, resources],
                                'buildRules': [], 'dependencies': [], 'name': 'Vitals', 'productName': 'Vitals', 'productReference': app,
-                               'packageProductDependencies': [supabaseProduct], 'productType': 'com.apple.product-type.application'})
+                               'packageProductDependencies': [], 'productType': 'com.apple.product-type.application'})
 proxy = add('test-proxy', {'isa': 'PBXContainerItemProxy', 'containerPortal': uid('project'), 'proxyType': '1', 'remoteGlobalIDString': appTarget,
                            'remoteInfo': 'Vitals'})
 dep = add('test-dependency', {'isa': 'PBXTargetDependency', 'target': appTarget, 'targetProxy': proxy})
@@ -138,7 +134,7 @@ project = add('project', {'isa': 'PBXProject',
                                                               uitestTarget: {'CreatedOnToolsVersion': '26.6', 'TestTargetID': appTarget}}},
                           'buildConfigurationList': projectConfigs, 'compatibilityVersion': 'Xcode 14.0', 'developmentRegion': 'en',
                           'hasScannedForEncodings': '0', 'knownRegions': ['en', 'Base'], 'mainGroup': main, 'productRefGroup': products,
-                          'packageReferences': [supabasePackage], 'projectDirPath': '', 'projectRoot': '', 'targets': [appTarget, testTarget, uitestTarget]})
+                          'packageReferences': [], 'projectDirPath': '', 'projectRoot': '', 'targets': [appTarget, testTarget, uitestTarget]})
 output = '// !$*UTF8*$!\n' + serialize({'archiveVersion': '1', 'classes': {}, 'objectVersion': '56', 'objects': objects, 'rootObject': project}) + '\n'
 (root / 'Vitals.xcodeproj').mkdir(exist_ok=True)
 (root / 'Vitals.xcodeproj/project.pbxproj').write_text(output)

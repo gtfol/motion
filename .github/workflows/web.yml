@@ -1,0 +1,43 @@
+name: Motion account service
+on:
+  push:
+    paths: ['web/**', '.github/workflows/web.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/web.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: motion_test
+          POSTGRES_PASSWORD: local_test_only
+          POSTGRES_DB: motion_web_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U motion_test -d motion_web_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: web
+    env:
+      DATABASE_URL: postgresql://motion_test:local_test_only@localhost:5432/motion_web_test
+      TEST_DATABASE_URL: postgresql://motion_test:local_test_only@localhost:5432/motion_web_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Prepare disposable database roles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'create role anon; create role authenticated;'
+      - run: npm run migrate
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build

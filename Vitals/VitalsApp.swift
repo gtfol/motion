@@ -64,7 +64,7 @@ import SwiftUI
     }
 
     var configured: Bool { cloud != nil }
-    var email: String? { cloud?.client.auth.currentSession?.user.id == owner ? cloud?.client.auth.currentSession?.user.email : nil }
+    var email: String? { cloud?.login?.user.id == owner ? cloud?.login?.user.email : nil }
     var canSwitch: Bool { services?.coordinator.activeSession == nil && services?.coordinator.exporting.isEmpty != false }
     private var selectionURL: URL { directory.appendingPathComponent("motion-account.json") }
     private func accountDirectory(_ owner: UUID) -> URL { directory.appendingPathComponent("accounts/\(owner.uuidString)") }
@@ -141,7 +141,7 @@ import SwiftUI
         defer { busy = false }
         do {
             try activate(nil)
-            await cloud?.signOut()
+            try await cloud?.signOut()
         } catch { message = error.localizedDescription }
     }
 
@@ -153,7 +153,7 @@ import SwiftUI
         do {
             try await cloud.deleteAccount(owner: owner)
             try activate(nil)
-            await cloud.signOut()
+            try await cloud.signOut()
             do { try FileManager.default.removeItem(at: accountDirectory(owner)) }
             catch { message = "your cloud account was deleted, but the local copy couldn’t be removed from this iPhone." }
         } catch {

@@ -83,7 +83,8 @@ struct SyncReply: Codable, Sendable { var applied: Bool; var record: CloudRecord
                           page.allSatisfy({ $0.revision > ledger.cursor }) else { throw SyncFailure.invalidDocument }
                     for record in page { try await merge(record) }
                     if let last = page.last { var next = ledger; next.cursor = last.revision; try persist(next) }
-                    if page.count < 100 { break }
+                    // The server can return a short page to stay within response byte limits.
+                    if page.isEmpty { break }
                 }
                 // Only seed after the first successful restore, to avoid creating defaults on top of cloud data.
                 if !ledger.records.isEmpty, try !store.preferences().catalogSeeded {
