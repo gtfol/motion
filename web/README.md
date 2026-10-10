@@ -6,6 +6,8 @@ Next.js on Vercel, Google-only Better Auth, Supabase PostgreSQL storage. This fo
 
 Use the existing **motion** project in Vercel’s **gtfol** team, domain **motion.gtfol.dev**. Deploy the `web` directory (or set Root Directory to `web` for a Git connection). Keep source exposure off and never add secrets to `NEXT_PUBLIC_*` variables.
 
+`vercel.json` explicitly selects the Next.js preset so the existing project's generic preset cannot publish an empty deployment. Use Vercel CLI 47.2.2 or newer. Set `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` to the existing project IDs to deploy without a local `.vercel` link file.
+
 Configure production variables in Vercel:
 
 | Variable | Value |
@@ -44,3 +46,5 @@ Before TestFlight: verify real Google sign-in through the production domain, sec
 ## Deployment record
 
 On October 1, 2026, Vercel verified the custom domain, and `001_backend.sql` was applied successfully through Motion’s Supabase SQL editor (SHA-256 `981466d5c9acf1bb120afcfd6ab6b17876dc41e2e1f58ae75e5b7d1368ef6c6e`). The preflight query confirmed zero legacy accounts and records. Production server credentials, web deployment and live Google/device tests remain pending.
+
+On October 10, 2026, production credentials were configured and the web service was deployed to `https://motion.gtfol.dev`. The database required Supabase's CA from the dashboard's certificate download; `DATABASE_SSL_CA` now supplies it while certificate and hostname verification remain enabled. A synthetic unknown-grant request successfully queried the private database and returned the expected 400 response. Real Google sign-in completed and returned an authenticated browser session to Motion. Native handoff and device sync tests remain release gates. Unexpected API failures log only allowlisted diagnostic codes, never exception messages, SQL, or connection strings.
