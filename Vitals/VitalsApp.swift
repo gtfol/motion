@@ -16,7 +16,7 @@ import SwiftUI
                         .modelContainer(services.container)
                 } else {
                     VStack(spacing: 16) {
-                        Text("vitals").font(VitalsStyle.heading)
+                        Text("motion").font(VitalsStyle.heading)
                         Text("couldn’t open your training log on this iPhone.").font(VitalsStyle.caption)
                             .foregroundStyle(VitalsStyle.secondary)
                         TextAction("try again") { launch.start() }

@@ -112,8 +112,8 @@ struct SettingsTab: View {
                 Text("heart rate strap").font(VitalsStyle.heading)
                 InfoButton(title: "heart rate strap", paragraphs: [
                     "in Zepp: Device → Helio Strap → Health Monitoring → turn on Heart Rate Push. then fully quit Zepp while training, because it can hold the strap’s connection.",
-                    "vitals reads the standard Bluetooth heart rate and battery services, and only connects to the strap you choose. Zepp doesn’t need to be open.",
-                    "with the screen locked, ios usually keeps delivering heart rate. if ios ends vitals, or you force-quit it, nothing is recorded until you open vitals again; that time shows as a gap."
+                    "motion reads the standard Bluetooth heart rate and battery services, and only connects to the strap you choose. Zepp doesn’t need to be open.",
+                    "with the screen locked, ios usually keeps delivering heart rate. if ios ends motion, or you force-quit it, nothing is recorded until you open motion again; that time shows as a gap."
                 ])
                 Spacer()
             }
@@ -148,9 +148,9 @@ struct SettingsTab: View {
             HStack(spacing: 0) {
                 Text("Apple Health").font(VitalsStyle.heading)
                 InfoButton(title: "Apple Health", paragraphs: [
-                    "each finished workout is saved to Apple Health once, with its type, start and end, and the heart-rate samples vitals received. sets and reps stay in vitals.",
-                    "vitals doesn’t write calories and doesn’t promise activity-ring credit.",
-                    "vitals reads workouts only to find one it already saved, so a retry can’t create a duplicate.",
+                    "each finished workout is saved to Apple Health once, with its type, start and end, and the heart-rate samples motion received. sets and reps stay in motion.",
+                    "motion doesn’t write calories and doesn’t promise activity-ring credit.",
+                    "motion reads workouts only to find one it already saved, so a retry can’t create a duplicate.",
                     "without access, everything still works here and nothing leaves this iPhone."
                 ])
                 Spacer()
@@ -158,17 +158,17 @@ struct SettingsTab: View {
             }
             switch coordinator.healthAccess {
             case .notDetermined:
-                Text("vitals asks when you first finish a workout, or now.").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                Text("motion asks when you first finish a workout, or now.").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                 TextAction("allow Apple Health") { Task { await coordinator.requestHealthAccess() } }
             case .denied:
-                Text("vitals can’t write workouts. change this in the Health app: tap your profile, then Apps → vitals.")
+                Text("motion can’t write workouts. change this in the Health app: tap your profile, then Apps → motion.")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             case .allowed(let heartRate):
                 Text(heartRate ? "workouts and heart rate are saved when you finish."
                      : "workouts are saved without heart rate, because writing heart rate isn’t allowed.")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             case .unavailable:
-                Text("Apple Health isn’t available on this device. workouts stay in vitals.")
+                Text("Apple Health isn’t available on this device. workouts stay in motion.")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
         }
@@ -185,7 +185,7 @@ struct SettingsTab: View {
 
     private var about: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeading(title: "vitals", detail: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
+            SectionHeading(title: "motion", detail: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
             Text("everything stays on this iPhone: no account, no network, no analytics. Apple Health gets a copy only if you allow it.")
                 .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             if let message = coordinator.message {
@@ -203,7 +203,7 @@ private struct OpenSettingsLink: View {
     }
 }
 
-/// Lists nearby heart-rate straps. The user picks one; vitals never picks a device on its own.
+/// Lists nearby heart-rate straps. The user picks one; motion never picks a device on its own.
 struct StrapChooser: View {
     @Environment(HeartRateMonitor.self) private var monitor
     @Environment(\.dismiss) private var dismiss
@@ -218,7 +218,7 @@ struct StrapChooser: View {
                     case .bluetoothOff:
                         Text("Bluetooth is off. turn it on in Control Center.").font(VitalsStyle.caption)
                     case .bluetoothDenied:
-                        Text("Bluetooth access is off for vitals.").font(VitalsStyle.caption)
+                        Text("Bluetooth access is off for motion.").font(VitalsStyle.caption)
                         OpenSettingsLink()
                     case .bluetoothUnavailable:
                         Text("this device doesn’t support Bluetooth heart-rate straps.").font(VitalsStyle.caption)
