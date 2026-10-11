@@ -13,7 +13,6 @@ import SwiftUI
                     RootView()
                         .environment(services.coordinator)
                         .environment(services.monitor)
-                        .environment(launch)
                         .id(launch.viewID)
                         .disabled(launch.busy)
                         .modelContainer(services.container)
@@ -30,6 +29,9 @@ import SwiftUI
                     .background(VitalsStyle.canvas)
                 }
             }
+            // The sheet is presented outside RootView's modifier chain. Supply
+            // account state above both the root and its presentation host.
+            .environment(launch)
             .font(VitalsStyle.body)
             .foregroundStyle(VitalsStyle.text)
             .tint(VitalsStyle.accent)
@@ -76,7 +78,26 @@ import SwiftUI
                 selected = try SyncCoding.decoder().decode(Selection.self, from: Data(contentsOf: selectionURL)).owner
             } else { selected = nil }
             try activate(selected, writeSelection: false)
+            // Credentials are saved before the import sheet opens. Resume a
+            // first sign-in interrupted before the user chose a local/cloud log.
+            if selected == nil, let account = cloud?.login?.user.id, isNewAccount(account) {
+                offerImport(for: account)
+            }
+            #if DEBUG
+            if testing, ProcessInfo.processInfo.arguments.contains("-ui-testing-import-choice") {
+                offerImport(for: UUID())
+            }
+            #endif
         } catch { message = error.localizedDescription }
+    }
+
+    private func isNewAccount(_ account: UUID) -> Bool {
+        !FileManager.default.fileExists(atPath: accountDirectory(account).appendingPathComponent("vitals.store").path)
+    }
+
+    private func offerImport(for account: UUID) {
+        pendingOwner = account
+        needsImportChoice = true
     }
 
     private func activate(_ account: UUID?, writeSelection: Bool = true) throws {
@@ -113,8 +134,8 @@ import SwiftUI
             let account = try await cloud.signIn()
             guard canSwitch else { throw StoreError.activeSessionExists }
             if account == owner { sync?.schedule(immediate: true); return }
-            if owner == nil, !FileManager.default.fileExists(atPath: accountDirectory(account).appendingPathComponent("vitals.store").path) {
-                pendingOwner = account; needsImportChoice = true
+            if owner == nil, isNewAccount(account) {
+                offerImport(for: account)
             } else { try activate(account) }
         } catch { message = "couldn’t sign in. your log is still saved on this iPhone." }
     }

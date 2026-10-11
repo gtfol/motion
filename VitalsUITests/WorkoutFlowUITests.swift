@@ -3,6 +3,28 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
+    @MainActor func testFirstSignInCanImportLocalLog() {
+        finishFirstSignIn(using: "add my local log")
+    }
+
+    @MainActor func testFirstSignInCanChooseCloudLog() {
+        finishFirstSignIn(using: "use my cloud log")
+    }
+
+    @MainActor private func finishFirstSignIn(using choice: String) {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        // Exercises the actual root presentation after the Google handoff,
+        // using an isolated store and no production credentials or network.
+        app.launchArguments = ["-ui-testing", "-ui-testing-import-choice"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["bring your local log?"].waitForExistence(timeout: 15))
+        app.buttons[choice].tap()
+        XCTAssertTrue(app.buttons["start-strength"].waitForExistence(timeout: 10))
+        app.buttons["tab-settings"].tap()
+        XCTAssertTrue(app.buttons["sign out"].waitForExistence(timeout: 5), "the selected account becomes active without losing the presentation environment")
+    }
+
     @MainActor func testStrengthWorkoutFromStartToHistory() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
