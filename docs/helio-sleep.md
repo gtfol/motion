@@ -4,6 +4,11 @@ Motion reads the Helio Strap's stored history over Bluetooth. Zepp's cloud API a
 Apple Health are not in this path. The single Sleep view prefers Helio data, with
 optional Apple Health access filling missing nights or metrics.
 
+Sleep opens in **daily**, with only the selected night's duration, stages, heart
+rate and breathing. **Weekly** contains the seven-day duration, schedule and rate
+charts ending on the selected date. Its arrows move seven days at a time, up to
+today. Switching views keeps the selected date; both support pull-to-refresh.
+
 ## Setup
 
 1. Open Settings → **strap** → **connect strap** (or **strap settings** for an already selected Helio).

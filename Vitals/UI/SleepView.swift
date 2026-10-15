@@ -7,6 +7,7 @@ struct SleepTab: View {
     @Environment(HelioSleepSync.self) private var helio
     @AppStorage("sleep-health-requested") private var requested = false
     @Environment(SleepHealthStore.self) private var health
+    @State private var period: SleepPeriod = .daily
     @State private var date = Calendar.current.startOfDay(for: Date.now)
     @State private var selectedTime: Date?
     private var measurements: SleepMeasurements {
@@ -20,46 +21,63 @@ struct SleepTab: View {
     var body: some View {
         let data = measurements
         let night = data.nights.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
+        let week = data.nights.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    datePicker
-                    if helio.busy {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                            Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                        }
+            VStack(spacing: 0) {
+                Picker("sleep view", selection: $period) {
+                    ForEach(SleepPeriod.allCases, id: \.self) { period in
+                        Text(period.rawValue).tag(period)
                     }
-                    if let night {
-                        nightSummary(night)
-                        stageChart(night)
-                        SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
-                                      night: night, values: data.heartRate)
-                        SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
-                                      night: night, values: data.respiratoryRate)
-                    } else if health.loading {
-                        ProgressView("loading sleep…").frame(maxWidth: .infinity)
-                    } else {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Label("no sleep measurements for this date", systemImage: "moon.zzz").font(VitalsStyle.heading)
-                            Text(!helio.hasKey && !requested
-                                 ? "set up your strap or Apple Health in settings."
-                                 : "check another date, or pull down to sync.")
-                                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                        }
-                        .accessibilityIdentifier("sleep-empty")
-                    }
-                    if let message = helio.message {
-                        Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
-                    }
-                    if let message = health.message {
-                        Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
-                    }
-                    if !data.nights.isEmpty { weeklyCharts(data) }
                 }
-                .padding(VitalsStyle.gutter)
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("sleep-period")
+                .padding(.horizontal, VitalsStyle.gutter)
+                .padding(.vertical, 8)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        datePicker
+                        if helio.busy {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                            }
+                        }
+                        if period == .weekly, !week.isEmpty {
+                            weeklyCharts(data, week: week)
+                        } else if period == .daily, let night {
+                            nightSummary(night)
+                            stageChart(night)
+                            SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
+                                          night: night, values: data.heartRate)
+                            SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
+                                          night: night, values: data.respiratoryRate)
+                        } else if health.loading {
+                            ProgressView("loading sleep…").frame(maxWidth: .infinity)
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Label(period == .daily ? "no sleep measurements for this date" : "no sleep measurements for this week",
+                                      systemImage: "moon.zzz").font(VitalsStyle.heading)
+                                Text(!helio.hasKey && !requested
+                                     ? "set up your strap or Apple Health in settings."
+                                     : period == .daily ? "check another date, or pull down to sync." : "check another week, or pull down to sync.")
+                                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                            }
+                            .accessibilityIdentifier("sleep-empty")
+                        }
+                        if let message = helio.message {
+                            Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                        }
+                        if let message = health.message {
+                            Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                        }
+                    }
+                    .padding(VitalsStyle.gutter)
+                }
+                .refreshable { await reload(force: true) }
+                // Each period starts at its own header instead of inheriting the other page's scroll offset.
+                .id(period)
             }
-            .refreshable { await reload(force: true) }
             .vitalsScreen()
             .vitalsTitle("sleep")
             .toolbar {
@@ -85,14 +103,23 @@ struct SleepTab: View {
 
     private var datePicker: some View {
         HStack {
-            Button { changeDay(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
-                .accessibilityLabel("previous sleep date").accessibilityIdentifier("sleep-previous")
+            Button { changeDay(period == .daily ? -1 : -7) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                .accessibilityLabel(period == .daily ? "previous sleep date" : "previous sleep week")
+                .accessibilityIdentifier("sleep-previous")
             Spacer(minLength: 0)
-            DatePicker("wake date", selection: $date, in: ...Date.now, displayedComponents: .date)
-                .labelsHidden().accessibilityLabel("wake date")
+            VStack(spacing: 4) {
+                if period == .weekly {
+                    Text("week ending").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                }
+                DatePicker(period == .daily ? "wake date" : "week ending", selection: $date,
+                           in: ...Date.now, displayedComponents: .date)
+                    .labelsHidden().accessibilityLabel(period == .daily ? "wake date" : "week ending")
+            }
             Spacer(minLength: 0)
-            Button { changeDay(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
-                .disabled(Calendar.current.isDateInToday(date)).accessibilityLabel("next sleep date")
+            Button { changeDay(period == .daily ? 1 : 7) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
+                .disabled(Calendar.current.isDateInToday(date))
+                .accessibilityLabel(period == .daily ? "next sleep date" : "next sleep week")
+                .accessibilityIdentifier("sleep-next")
         }
     }
 
@@ -158,11 +185,14 @@ struct SleepTab: View {
         }.sleepCard()
     }
 
-    private func weeklyCharts(_ data: SleepMeasurements) -> some View {
-        let start = Calendar.current.date(byAdding: .day, value: -6, to: date)!
-        let week = data.nights.filter { $0.day >= start && $0.day <= date }
-        return VStack(alignment: .leading, spacing: 20) {
-            SectionHeading(title: "last 7 days", detail: "ending \(date.formatted(.dateTime.month(.abbreviated).day()))")
+    private func weeklyCharts(_ data: SleepMeasurements, week: [SleepNight]) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(weekDomain.lowerBound.formatted(.dateTime.month(.abbreviated).day())) – \(date.formatted(.dateTime.month(.abbreviated).day()))")
+                    .font(VitalsStyle.heading).accessibilityIdentifier("sleep-week-range")
+                Text("\(week.count) \(week.count == 1 ? "night" : "nights") recorded")
+                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+            }
             VStack(alignment: .leading, spacing: 12) {
                 Text("time asleep").font(VitalsStyle.heading)
                 Chart {
@@ -233,12 +263,19 @@ struct SleepTab: View {
         return Double(offset * 24 + calendar.component(.hour, from: time)) + Double(calendar.component(.minute, from: time)) / 60
     }
 
-    private func changeDay(_ amount: Int) { date = Calendar.current.date(byAdding: .day, value: amount, to: date)! }
+    private func changeDay(_ amount: Int) {
+        date = min(Calendar.current.date(byAdding: .day, value: amount, to: date)!,
+                   Calendar.current.startOfDay(for: .now))
+    }
     private func reload(force: Bool = false) async {
         helio.sync(force: force)
         if requested { await health.load(endingOn: date) }
     }
 
+}
+
+private enum SleepPeriod: String, CaseIterable {
+    case daily, weekly
 }
 
 private struct SleepRateCard: View {

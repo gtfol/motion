@@ -2,11 +2,14 @@
 
 ## What has been checked
 
+- **Daily and weekly Sleep (pending build 10):** three simulator UI scenarios pass. Daily contains only the selected night; weekly contains seven-day duration, schedule, heart-rate and breathing charts. Tests cover keeping the period switch visible while scrolling, resetting scroll position on a switch, seven-day navigation, preserving the selected date, stopping at today, pull-to-refresh and separate empty states. The existing Settings connection flow also passes. Daily, weekly and empty-state screenshots were visually inspected; measurement fixtures are synthetic.
+
 - **Apple Health access (build 10):** 86 iOS unit tests and two Settings UI scenarios pass. The access regression covers initial authorization, immediate data refresh, repeated taps opening the access guide, opening the actual Health app, returning to Motion and refreshing again, then displaying the readable sleep data. Four authorization tests cover a previously answered request, unknown request status, status/request failures and unavailable Health. The UI test uses synthetic authorization responses and measurements; native permission choices still need a physical-device check. The flow uses Apple's [authorization request status](https://developer.apple.com/documentation/healthkit/hkhealthstore/getrequeststatusforauthorization(toshare:read:completion:)) to distinguish a new prompt from management; it never treats request completion as permission granted. Health's root URL scheme was verified in the simulator app's registered URL types and by the handoff UI test.
 
 The first build 10 archive (`9ec996a`) passed signature and version checks, but its
 upload could not read Xcode's Apple account token while the Mac was locked. It does
-not include the later Apple Health access fix (`bd6616b`), so do not upload it.
+not include the later Apple Health access fix (`bd6616b`) or daily/weekly Sleep
+views, so do not upload it.
 The replacement archive stalled in Apple's asset tool while the Mac remained
 locked and was cancelled. After unlocking, archive the current branch as build 10
 and retry upload; no build 10 upload has succeeded. Build 9 is still the latest

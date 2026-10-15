@@ -65,7 +65,7 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
     }
 
-    @MainActor func testSleepShowsRecordedStagesAndTrends() {
+    @MainActor func testSleepSeparatesDailyMeasurementsFromWeeklyTrends() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing", "-ui-testing-sleep"]
@@ -75,17 +75,52 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m", "Health fills a missing Helio night automatically")
         XCTAssertFalse(app.segmentedControls["sleep-source"].exists)
+        let period = app.segmentedControls["sleep-period"]
+        XCTAssertTrue(period.buttons["daily"].isSelected)
+        XCTAssertFalse(app.staticTexts["sleep-week-range"].exists)
+        XCTAssertFalse(app.staticTexts["sleep schedule"].exists)
         app.swipeDown()
         XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m", "pull to refresh keeps one copy of the night")
-        capture(app, "sleep stages sample measurements")
+        capture(app, "daily sleep stages")
         app.swipeUp()
         XCTAssertTrue(app.staticTexts["breathing rate"].firstMatch.waitForExistence(timeout: 5))
-        capture(app, "sleep heart and breathing measurements")
-        app.swipeUp()
-        capture(app, "sleep duration and schedule")
+        capture(app, "daily sleep heart and breathing measurements")
+        XCTAssertTrue(period.buttons["weekly"].isHittable, "period tabs stay accessible when the page scrolls")
+        period.buttons["weekly"].tap()
+        let range = app.staticTexts["sleep-week-range"]
+        XCTAssertTrue(range.waitForExistence(timeout: 5))
+        XCTAssertTrue(range.isHittable, "switching periods starts at the top")
+        XCTAssertFalse(app.staticTexts["sleep-duration"].exists)
+        XCTAssertFalse(app.otherElements["sleep-stages-chart"].exists)
+        XCTAssertTrue(app.staticTexts["sleep schedule"].exists)
+        XCTAssertFalse(app.buttons["sleep-next"].isEnabled)
+        let currentRange = range.label
+        capture(app, "weekly sleep duration and schedule")
         app.swipeUp()
         capture(app, "sleep weekly trends")
+        app.swipeDown()
+        app.swipeDown()
+        app.buttons["sleep-previous"].tap()
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let priorStart = calendar.date(byAdding: .day, value: -13, to: today)!
+        let priorEnd = calendar.date(byAdding: .day, value: -7, to: today)!
+        let priorRange = "\(priorStart.formatted(.dateTime.month(.abbreviated).day())) – \(priorEnd.formatted(.dateTime.month(.abbreviated).day()))"
+        XCTAssertTrue(app.staticTexts[priorRange].waitForExistence(timeout: 5), "weekly arrows move by seven days")
+        app.buttons["sleep-next"].tap()
+        XCTAssertTrue(app.staticTexts[currentRange].waitForExistence(timeout: 5))
+
+        period.buttons["daily"].tap()
+        XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
+        XCTAssertFalse(range.exists)
+        app.buttons["sleep-previous"].tap()
+        period.buttons["weekly"].tap()
+        XCTAssertTrue(range.waitForExistence(timeout: 5))
+        XCTAssertNotEqual(range.label, currentRange, "the selected date is kept across periods")
+        app.buttons["sleep-next"].tap()
+        XCTAssertTrue(app.staticTexts[currentRange].waitForExistence(timeout: 5), "forward navigation stops at today")
+        XCTAssertFalse(app.buttons["sleep-next"].isEnabled)
     }
 
     @MainActor func testSleepWithoutReadableDataExplainsConnection() {
@@ -100,6 +135,13 @@ final class WorkoutFlowUITests: XCTestCase {
         app.swipeDown()
         XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
         capture(app, "sleep without readable measurements")
+        app.segmentedControls["sleep-period"].buttons["weekly"].tap()
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this week"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["sleep-duration"].exists)
+        XCTAssertFalse(app.staticTexts["sleep-week-range"].exists)
+        app.swipeDown()
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this week"].waitForExistence(timeout: 5))
+        capture(app, "weekly sleep without readable measurements")
     }
 
     @MainActor func testWorkoutKeyboardHidesNavigationAndKeepsRestFlush() {
