@@ -2,6 +2,11 @@
 
 ## What has been checked
 
+Build 10's signed Release archive (`9ec996a`) passes signature and version checks. Its
+first upload attempt could not read Xcode's Apple account token while the Mac was
+locked. Unlock and retry that archive; do not increment or rearchive solely for this
+upload failure. Build 9 is still the latest successfully uploaded package below.
+
 - **Strap transfer recovery (build 10):** 118 protocol tests, 82 iOS unit tests and the Settings UI check pass. New regressions cover zero-stage records alongside valid nights, later staging without erasing a saved night, malformed stage tables/times/overlaps with independent HR and breathing downloads, and actual local-write failure. Rejected rounds keep band history and saved cursors; content errors now identify the failing validation instead of claiming storage failed. The Settings action is named **strap settings**. The first incremental simulator build used a stale package interface; a fresh build and all targeted tests pass. The user's October 15 screenshot confirms authentication reached history processing; its generic error cannot establish the exact failed check, and a successful physical-band retry is still required. Build 9's full [CI run](https://github.com/gtfol/motion/actions/runs/38799306593) also passed.
 
 Status as of October 15, 2026. Motion 0.1 (9), archived from `e8f8528`, uploaded successfully at 13:07 PDT with unified Sleep and setup in Settings. Apple accepted the package for processing; internal TestFlight availability is awaiting confirmation because the browser session expired. The signed Release archive passes code-signature validation and retains the `motion` phone label and `dev.gtfol.vitals` identifier. Build 8 was also uploaded successfully; build 7 remains the last browser-confirmed Testing build.
