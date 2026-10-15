@@ -2,34 +2,66 @@ import Foundation
 import HealthKit
 import Observation
 
+/// Request status says whether iOS will show a prompt; it never exposes read permission decisions.
+@MainActor struct SleepHealthAuthorization {
+    var available: () -> Bool
+    var status: () async throws -> HKAuthorizationRequestStatus
+    var request: () async throws -> Void
+
+    static func live(_ store: HKHealthStore) -> Self {
+        let read: Set<HKObjectType> = [HKCategoryType(.sleepAnalysis), HKQuantityType(.heartRate), HKQuantityType(.respiratoryRate)]
+        return Self(available: { HKHealthStore.isHealthDataAvailable() },
+                    status: { try await store.statusForAuthorizationRequest(toShare: [], read: read) },
+                    request: { try await store.requestAuthorization(toShare: [], read: read) })
+    }
+}
+
 /// Read-only, on-device HealthKit data. Nothing here enters the workout database or cloud sync.
 @MainActor @Observable final class SleepHealthStore {
+    enum ConnectionResult: Equatable {
+        case requested, manageAccess, unavailable, failed
+    }
     private(set) var records: [SleepMeasurements] = []
     private(set) var loading = false
     private(set) var message: String?
-    var available: Bool { HKHealthStore.isHealthDataAvailable() }
-    @ObservationIgnored private let store = HKHealthStore()
+    var available: Bool { authorization.available() }
+    @ObservationIgnored private let store: HKHealthStore
+    @ObservationIgnored private let authorization: SleepHealthAuthorization
     @ObservationIgnored private var generation = UUID()
+
+    init(authorization: SleepHealthAuthorization? = nil) {
+        let store = HKHealthStore()
+        self.store = store
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if authorization == nil, args.contains("-ui-testing"), args.contains("-ui-testing-sleep-access") {
+            var requested = false
+            self.authorization = SleepHealthAuthorization(available: { true },
+                status: { requested ? .unnecessary : .shouldRequest }, request: { requested = true })
+            return
+        }
+        #endif
+        self.authorization = authorization ?? .live(store)
+    }
 
     var usesTestMeasurements: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-ui-testing") && ProcessInfo.processInfo.arguments.contains("-ui-testing-sleep")
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("-ui-testing") && args.contains("-ui-testing-sleep")
         #else
         false
         #endif
     }
 
-    func connect() async -> Bool {
-        guard available else { return false }
+    func connect() async -> ConnectionResult {
+        guard available else { return .unavailable }
         do {
-            try await store.requestAuthorization(toShare: [], read: [
-                HKCategoryType(.sleepAnalysis), HKQuantityType(.heartRate), HKQuantityType(.respiratoryRate)
-            ])
+            if try await authorization.status() == .unnecessary { return .manageAccess }
+            try await authorization.request()
             // Completion does NOT indicate read permission. HealthKit deliberately hides denials.
-            return true
+            return .requested
         } catch {
-            message = "couldn’t open Apple Health permissions. try again."
-            return false
+            return .failed
         }
     }
 
@@ -42,7 +74,10 @@ import Observation
         records = []
         defer { if generation == request { loading = false } }
         #if DEBUG
-        if usesTestMeasurements { loadTestMeasurements(endingOn: date); return }
+        let args = ProcessInfo.processInfo.arguments
+        if usesTestMeasurements || (args.contains("-ui-testing") && args.contains("-ui-testing-sleep-access")) {
+            loadTestMeasurements(endingOn: date); return
+        }
         #endif
         guard available else { message = "Apple Health isn’t available on this device."; return }
         let calendar = Calendar.current

@@ -3,6 +3,37 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
+    @MainActor func testSleepAccessRefreshesThenShowsManagementOnRepeatTap() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-sleep-access"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-settings"].waitForExistence(timeout: 15))
+        app.buttons["tab-settings"].tap()
+        app.swipeUp()
+        let access = app.buttons["sleep-health-connect"]
+        XCTAssertTrue(access.waitForExistence(timeout: 5))
+        XCTAssertEqual(access.label, "connect sleep data")
+        access.tap()
+        XCTAssertTrue(app.staticTexts["sleep data refreshed"].waitForExistence(timeout: 5))
+        XCTAssertEqual(access.label, "manage sleep access")
+        access.tap()
+        XCTAssertTrue(app.staticTexts["sleep-health-instructions"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["sleep-health-open"].isHittable)
+        capture(app, "manage Apple Health sleep access")
+        app.buttons["sleep-health-open"].tap()
+        let healthApp = XCUIApplication(bundleIdentifier: "com.apple.Health")
+        XCTAssertTrue(healthApp.wait(for: .runningForeground, timeout: 10))
+        app.activate()
+        XCTAssertTrue(app.staticTexts["sleep data refreshed"].waitForExistence(timeout: 5))
+        access.tap()
+        XCTAssertTrue(app.staticTexts["sleep-health-instructions"].waitForExistence(timeout: 5))
+        app.buttons["close"].tap()
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m")
+    }
+
     @MainActor func testSleepConnectionsLiveInSettings() {
         continueAfterFailure = false
         let app = XCUIApplication()

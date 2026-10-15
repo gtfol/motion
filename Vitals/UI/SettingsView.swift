@@ -6,10 +6,13 @@ struct SettingsTab: View {
     @Environment(HeartRateMonitor.self) private var monitor
     @Environment(HelioSleepSync.self) private var helio
     @Environment(SleepHealthStore.self) private var sleepHealth
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("sleep-health-requested") private var sleepHealthRequested = false
     @State private var choosingStrap = false
     @State private var showingSleepSetup = false
     @State private var connectingSleepHealth = false
+    @State private var showingSleepHealthAccess = false
+    @State private var returningFromHealth = false
     @State private var sleepHealthMessage: String?
     @State private var ageText = ""
     @FocusState private var ageFocused: Bool
@@ -34,7 +37,19 @@ struct SettingsTab: View {
             .vitalsTitle("settings")
             .sheet(isPresented: $choosingStrap) { StrapChooser() }
             .sheet(isPresented: $showingSleepSetup) { HelioSetupView() }
+            .sheet(isPresented: $showingSleepHealthAccess) {
+                SleepHealthAccessView {
+                    returningFromHealth = true
+                    showingSleepHealthAccess = false
+                }
+            }
             .onAppear { ageText = coordinator.age.map { "\($0)" } ?? "" }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active, returningFromHealth {
+                    returningFromHealth = false
+                    Task { await refreshSleepHealth() }
+                }
+            }
         }
     }
 
@@ -167,22 +182,40 @@ struct SettingsTab: View {
             case .allowed, .unavailable:
                 EmptyView()
             }
-            TextAction(connectingSleepHealth ? "connecting…" : sleepHealthRequested ? "sleep access" : "connect sleep data") {
-                Task {
-                    connectingSleepHealth = true
-                    if await sleepHealth.connect() {
-                        sleepHealthRequested = true
-                        sleepHealthMessage = nil
-                    } else { sleepHealthMessage = sleepHealth.message }
-                    connectingSleepHealth = false
-                }
-            }
-            .disabled(connectingSleepHealth || !sleepHealth.available)
+            TextAction(connectingSleepHealth ? "connecting…" : sleepHealthRequested ? "manage sleep access" : "connect sleep data", action: connectSleepHealth)
+            .disabled(connectingSleepHealth)
             .accessibilityIdentifier("sleep-health-connect")
             if let sleepHealthMessage {
                 Text(sleepHealthMessage).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
             }
         }
+    }
+
+    private func connectSleepHealth() {
+        guard !connectingSleepHealth else { return }
+        connectingSleepHealth = true
+        sleepHealthMessage = nil
+        Task {
+            defer { connectingSleepHealth = false }
+            switch await sleepHealth.connect() {
+            case .requested:
+                sleepHealthRequested = true
+                await refreshSleepHealth()
+            case .manageAccess:
+                sleepHealthRequested = true
+                showingSleepHealthAccess = true
+            case .unavailable:
+                sleepHealthMessage = "Apple Health isn’t available on this device."
+            case .failed:
+                sleepHealthMessage = "couldn’t open Apple Health permissions. try again."
+            }
+        }
+    }
+
+    private func refreshSleepHealth() async {
+        await sleepHealth.load(endingOn: .now)
+        let hasData = sleepHealth.records.contains { !$0.nights.isEmpty || !$0.heartRate.isEmpty || !$0.respiratoryRate.isEmpty }
+        sleepHealthMessage = sleepHealth.message ?? (hasData ? "sleep data refreshed" : "no sleep data is readable yet. check access in Health or try another date.")
     }
 
     private var accessLabel: String {
@@ -201,6 +234,39 @@ struct SettingsTab: View {
                 Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
         }
+    }
+}
+
+private struct SleepHealthAccessView: View {
+    let openedHealth: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("in Health, tap your profile → Apps → motion.")
+                    .accessibilityIdentifier("sleep-health-instructions")
+                Text("choose access to Sleep, Heart Rate and Respiratory Rate.")
+                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                TextAction("open Health") {
+                    openURL(URL(string: "x-apple-health://")!) { opened in
+                        if opened { openedHealth() }
+                        else { message = "open the Health app from your Home Screen." }
+                    }
+                }
+                .accessibilityIdentifier("sleep-health-open")
+                if let message { Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary) }
+                Spacer(minLength: 0)
+            }
+            .padding(VitalsStyle.gutter)
+            .vitalsScreen()
+            .vitalsTitle("sleep access")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("close") { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationBackground(VitalsStyle.canvas)
     }
 }
 

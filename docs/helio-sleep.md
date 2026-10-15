@@ -18,6 +18,12 @@ optional Apple Health access filling missing nights or metrics.
    are throttled to fifteen minutes; manual retries are immediate.
 
 Optional fallback: in Settings → Apple Health, choose **connect sleep data**.
+After answering the permission prompt, the action becomes **manage sleep access**.
+If iOS has already asked for all three read types, tapping it opens a short guide
+with **open Health** instead of silently repeating the authorization request.
+Use Health → profile → Apps → motion to change access. Motion refreshes readable
+measurements after the initial request and when returning from Health. An empty
+query is not treated as proof that access was denied.
 No source picker is needed. A Helio sleep record wins for its wake date; otherwise
 Motion selects one Health recording, preferring stages and then sleep coverage.
 Overlapping recordings, including duplicates assigned to neighboring dates, are not

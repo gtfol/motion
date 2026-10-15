@@ -2,6 +2,8 @@
 
 ## What has been checked
 
+- **Apple Health access (build 10):** 86 iOS unit tests and two Settings UI scenarios pass. The access regression covers initial authorization, immediate data refresh, repeated taps opening the access guide, opening the actual Health app, returning to Motion and refreshing again, then displaying the readable sleep data. Four authorization tests cover a previously answered request, unknown request status, status/request failures and unavailable Health. The UI test uses synthetic authorization responses and measurements; native permission choices still need a physical-device check. The flow uses Apple's [authorization request status](https://developer.apple.com/documentation/healthkit/hkhealthstore/getrequeststatusforauthorization(toshare:read:completion:)) to distinguish a new prompt from management; it never treats request completion as permission granted. Health's root URL scheme was verified in the simulator app's registered URL types and by the handoff UI test.
+
 Build 10's signed Release archive (`9ec996a`) passes signature and version checks. Its
 first upload attempt could not read Xcode's Apple account token while the Mac was
 locked. Unlock and retry that archive; do not increment or rearchive solely for this
