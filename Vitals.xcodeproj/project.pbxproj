@@ -775,7 +775,7 @@
 				GENERATE_INFOPLIST_FILE = "NO";
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
 				MARKETING_VERSION = "0.1";
-				CURRENT_PROJECT_VERSION = "7";
+				CURRENT_PROJECT_VERSION = "8";
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks",);
 			};
 			name = "Debug";
@@ -796,7 +796,7 @@
 				GENERATE_INFOPLIST_FILE = "NO";
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
 				MARKETING_VERSION = "0.1";
-				CURRENT_PROJECT_VERSION = "7";
+				CURRENT_PROJECT_VERSION = "8";
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks",);
 			};
 			name = "Release";
