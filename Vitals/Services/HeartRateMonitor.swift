@@ -1,6 +1,7 @@
 import CoreBluetooth
 import Foundation
 import Observation
+@preconcurrency import ZeppKit
 
 enum StrapStatus: Equatable, Sendable {
     case noStrap
@@ -60,6 +61,80 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
     @ObservationIgnored var onReading: ((HeartRateReading) -> Void)?
     @ObservationIgnored var onSelectionChange: ((UUID?, String?) -> Void)?
 
+    @ObservationIgnored private weak var helio: HelioSleepSync?
+    @ObservationIgnored private var helioCharacteristics: [ZeppCharacteristic: CBCharacteristic] = [:]
+    @ObservationIgnored private var helioWrites: [ZeppWrite] = []
+    @ObservationIgnored private var helioWritePending = false
+
+    func configureHelio(_ sync: HelioSleepSync) {
+        helio = sync
+        sync.select(id: strapID, name: strapName)
+        sync.send = { [weak self] write in self?.queueHelio(write) }
+        sync.cancelWrites = { [weak self] in self?.helioWrites.removeAll() }
+        sync.requestConnection = { [weak self] in
+            guard let self else { return }
+            self.activate()
+            if let peripheral = self.peripheral, peripheral.state == .connected {
+                if self.helioCharacteristics.isEmpty {
+                    peripheral.discoverServices([Self.heartRateService, Self.batteryService, CBUUID(string: ZeppGATT.mainServiceUUID)])
+                } else { self.prepareHelio(peripheral) }
+            } else { self.connectToChosenStrap() }
+        }
+    }
+
+    private func prepareHelio(_ peripheral: CBPeripheral) {
+        guard helio?.busy == true else { return }
+        let required: [ZeppCharacteristic] = [.chunkedWrite, .chunkedRead, .activityControl, .activityData]
+        guard required.allSatisfy({ helioCharacteristics[$0] != nil }) else { helio?.connectionFailed(); return }
+        for key in [ZeppCharacteristic.chunkedRead, .activityControl, .activityData] {
+            guard let characteristic = helioCharacteristics[key], characteristic.properties.contains(.notify) else {
+                helio?.connectionFailed(); return
+            }
+            if !characteristic.isNotifying { peripheral.setNotifyValue(true, for: characteristic) }
+        }
+        if let ack = helioCharacteristics[.chunkedWrite], ack.properties.contains(.notify), !ack.isNotifying {
+            peripheral.setNotifyValue(true, for: ack)
+        }
+        helioReady(peripheral)
+    }
+
+    private func helioReady(_ peripheral: CBPeripheral) {
+        guard [.chunkedRead, .activityControl, .activityData].allSatisfy({ helioCharacteristics[$0]?.isNotifying == true }),
+              let write = helioCharacteristics[.chunkedWrite] else { return }
+        let type: CBCharacteristicWriteType = write.properties.contains(.write) ? .withResponse : .withoutResponse
+        helio?.connected(maxWriteLength: min(512, peripheral.maximumWriteValueLength(for: type)))
+    }
+
+    private func queueHelio(_ write: ZeppWrite) {
+        guard [.chunkedWrite, .chunkedRead, .activityControl].contains(write.characteristic),
+              write.bytes != [0x03, 0x01], helioWrites.count < 4096 else { helio?.connectionFailed(); return }
+        helioWrites.append(write)
+        drainHelioWrites()
+    }
+
+    private func drainHelioWrites() {
+        guard !helioWritePending, let peripheral, peripheral.state == .connected else { return }
+        while let write = helioWrites.first {
+            guard let characteristic = helioCharacteristics[write.characteristic] else { helio?.connectionFailed(); return }
+            let type: CBCharacteristicWriteType
+            if characteristic.properties.contains(.write) { type = .withResponse }
+            else if characteristic.properties.contains(.writeWithoutResponse) {
+                guard peripheral.canSendWriteWithoutResponse else { return }
+                type = .withoutResponse
+            } else { helio?.connectionFailed(); return }
+            guard write.bytes.count <= peripheral.maximumWriteValueLength(for: type) else { helio?.connectionFailed(); return }
+            helioWrites.removeFirst()
+            helioWritePending = type == .withResponse
+            peripheral.writeValue(Data(write.bytes), for: characteristic, type: type)
+            if helioWritePending { return }
+        }
+    }
+
+    private func resetHelioConnection() {
+        helioCharacteristics = [:]; helioWrites = []; helioWritePending = false
+        helio?.disconnected()
+    }
+
     @ObservationIgnored private let restoreIdentifier: String
     @ObservationIgnored private var central: CBCentralManager?
     @ObservationIgnored private var peripheral: CBPeripheral?
@@ -107,6 +182,8 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         strapName = candidate.name
         peripheral = discovered[candidate.id]
         batteryPercent = nil; latest = nil; sensorContact = nil; hasConnected = false; lostAt = nil
+        resetHelioConnection()
+        helio?.select(id: strapID, name: strapName)
         onSelectionChange?(strapID, strapName)
         stopChoosing()
         connectToChosenStrap()
@@ -114,6 +191,8 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
 
     /// Release the old account's monitor without changing its saved strap selection.
     func shutdown() {
+        helio?.shutdown()
+        resetHelioConnection()
         retry?.cancel(); retry = nil
         onReading = nil; onSelectionChange = nil
         central?.delegate = nil; peripheral?.delegate = nil
@@ -129,6 +208,8 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         batteryPercent = nil; latest = nil; sensorContact = nil; hasConnected = false; lostAt = nil
         scanningForStrap = false
         if !isChoosing { central?.stopScan() }
+        resetHelioConnection()
+        helio?.select(id: nil, name: nil)
         status = .noStrap
         onSelectionChange?(nil, nil)
     }
@@ -152,7 +233,7 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         var target = peripheral?.identifier == strapID ? peripheral : nil
         if target == nil { target = central.retrievePeripherals(withIdentifiers: [strapID]).first }
         if target == nil {
-            target = central.retrieveConnectedPeripherals(withServices: [Self.heartRateService]).first(where: { $0.identifier == strapID })
+            target = central.retrieveConnectedPeripherals(withServices: [Self.heartRateService, CBUUID(string: ZeppGATT.mainServiceUUID)]).first(where: { $0.identifier == strapID })
         }
         guard let target else {
             // iOS no longer knows this identifier (for example after a Bluetooth reset): scan, but only accept this strap.
@@ -172,13 +253,13 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
     private func beginScan() {
         guard let central, central.state == .poweredOn else { return }
         if isChoosing {
-            for connected in central.retrieveConnectedPeripherals(withServices: [Self.heartRateService]) {
+            for connected in central.retrieveConnectedPeripherals(withServices: [Self.heartRateService, CBUUID(string: ZeppGATT.mainServiceUUID)]) {
                 discovered[connected.identifier] = connected
                 upsertCandidate(StrapCandidate(id: connected.identifier, name: connected.name ?? "heart rate strap",
                                                rssi: nil, connectedToPhone: true))
             }
         }
-        central.scanForPeripherals(withServices: [Self.heartRateService], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+        central.scanForPeripherals(withServices: [Self.heartRateService, CBUUID(string: ZeppGATT.mainServiceUUID)], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
     }
 
     private func upsertCandidate(_ candidate: StrapCandidate) {
@@ -198,6 +279,7 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         case .poweredOff:
             if status == .connected || status == .noHeartRateService { lostAt = .now }
             // iOS invalidates peripherals when Bluetooth turns off; retrieve the strap again when it's back on.
+            resetHelioConnection()
             peripheral = nil; latest = nil; sensorContact = nil
             status = strapID == nil ? .noStrap : .bluetoothOff
         case .unauthorized:
@@ -243,12 +325,14 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
         }
         if strapName == nil, let name = connected.name { strapName = name; onSelectionChange?(strapID, name) }
         connected.delegate = self
-        connected.discoverServices([Self.heartRateService, Self.batteryService])
+        helioCharacteristics = [:]; helioWrites = []; helioWritePending = false
+        connected.discoverServices([Self.heartRateService, Self.batteryService, CBUUID(string: ZeppGATT.mainServiceUUID)])
     }
 
     private func didLose(_ lost: CBPeripheral) {
         guard lost.identifier == strapID else { return }
         if lostAt == nil { lostAt = .now }
+        resetHelioConnection()
         latest = nil; sensorContact = nil
         status = hasConnected ? .reconnecting : .searching
         connectToChosenStrap()
@@ -256,6 +340,7 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
 
     private func didFail(_ failed: CBPeripheral) {
         guard failed.identifier == strapID else { return }
+        helio?.connectionFailed()
         status = hasConnected ? .reconnecting : .searching
         retry?.cancel()
         retry = Task { [weak self] in
@@ -266,16 +351,22 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
     }
 
     private func discoveredServices(_ connected: CBPeripheral) {
+        guard connected.identifier == strapID else { return }
         let services = connected.services ?? []
         if !services.contains(where: { $0.uuid == Self.heartRateService }) { status = .noHeartRateService }
         for service in services {
             if service.uuid == Self.heartRateService { connected.discoverCharacteristics([Self.heartRateMeasurement], for: service) }
+            if service.uuid == CBUUID(string: ZeppGATT.mainServiceUUID) { connected.discoverCharacteristics(nil, for: service) }
             if service.uuid == Self.batteryService { connected.discoverCharacteristics([Self.batteryLevel], for: service) }
         }
     }
 
     private func discoveredCharacteristics(_ connected: CBPeripheral, service: CBService) {
+        guard connected.identifier == strapID else { return }
         for characteristic in service.characteristics ?? [] {
+            if let key = ZeppCharacteristic.allCases.first(where: { CBUUID(string: $0.uuidString) == characteristic.uuid }) {
+                helioCharacteristics[key] = characteristic
+            }
             if characteristic.uuid == Self.heartRateMeasurement {
                 connected.setNotifyValue(true, for: characteristic)
             } else if characteristic.uuid == Self.batteryLevel {
@@ -283,10 +374,14 @@ struct StrapCandidate: Identifiable, Equatable, Sendable {
                 if characteristic.properties.contains(.notify) { connected.setNotifyValue(true, for: characteristic) }
             }
         }
+        if service.uuid == CBUUID(string: ZeppGATT.mainServiceUUID) { prepareHelio(connected) }
     }
 
     private func received(_ data: Data, from characteristic: CBUUID, peripheral source: UUID, at date: Date) {
         guard source == strapID else { return }
+        if let key = ZeppCharacteristic.allCases.first(where: { CBUUID(string: $0.uuidString) == characteristic }) {
+            helio?.receive(Array(data), characteristic: key)
+        }
         if characteristic == Self.batteryLevel {
             if let level = BatteryLevel.parse(data) { batteryPercent = level }
             return
@@ -341,14 +436,45 @@ extension HeartRateMonitor: CBCentralManagerDelegate {
 }
 
 extension HeartRateMonitor: CBPeripheralDelegate {
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: (any Error)?) {
+        let connected = MainQueueValue(value: peripheral), failed = error != nil, uuid = characteristic.uuid.uuidString
+        MainActor.assumeIsolated {
+            guard connected.value.identifier == strapID else { return }
+            let required: [ZeppCharacteristic] = [.chunkedRead, .activityControl, .activityData]
+            if failed {
+                if required.contains(where: { CBUUID(string: $0.uuidString).uuidString == uuid }) { helio?.connectionFailed() }
+            } else { helioReady(connected.value) }
+        }
+    }
+
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: (any Error)?) {
+        let id = peripheral.identifier, failed = error != nil
+        MainActor.assumeIsolated {
+            guard id == strapID else { return }
+            helioWritePending = false
+            if failed { helio?.connectionFailed() } else { drainHelioWrites() }
+        }
+    }
+
+    nonisolated func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
+        let id = peripheral.identifier
+        MainActor.assumeIsolated { if id == strapID { drainHelioWrites() } }
+    }
+
     nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: (any Error)?) {
-        let connected = MainQueueValue(value: peripheral)
-        MainActor.assumeIsolated { discoveredServices(connected.value) }
+        let connected = MainQueueValue(value: peripheral), failed = error != nil
+        MainActor.assumeIsolated {
+            guard connected.value.identifier == strapID else { return }
+            if failed { helio?.connectionFailed() } else { discoveredServices(connected.value) }
+        }
     }
 
     nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: (any Error)?) {
-        let connected = MainQueueValue(value: peripheral), discovered = MainQueueValue(value: service)
-        MainActor.assumeIsolated { discoveredCharacteristics(connected.value, service: discovered.value) }
+        let connected = MainQueueValue(value: peripheral), discovered = MainQueueValue(value: service), failed = error != nil
+        MainActor.assumeIsolated {
+            guard connected.value.identifier == strapID else { return }
+            if failed { helio?.connectionFailed() } else { discoveredCharacteristics(connected.value, service: discovered.value) }
+        }
     }
 
     nonisolated func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: (any Error)?) {

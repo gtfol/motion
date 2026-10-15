@@ -186,6 +186,7 @@ private struct OpenSettingsLink: View {
 
 /// Lists nearby heart-rate straps. The user picks one; motion never picks a device on its own.
 struct StrapChooser: View {
+    var forSleep = false
     @Environment(HeartRateMonitor.self) private var monitor
     @Environment(\.dismiss) private var dismiss
 
@@ -193,7 +194,7 @@ struct StrapChooser: View {
         NavigationStack {
             List {
                 Section {
-                    Text("turn on Heart Rate Push in Zepp (Device → Helio Strap → Health Monitoring), wear the strap, and fully quit Zepp.")
+                    Text(forSleep ? "keep your Helio Strap nearby and close Zepp while connecting." : "turn on Heart Rate Push in Zepp (Device → Helio Strap → Health Monitoring), wear the strap, and fully quit Zepp.")
                         .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                     switch monitor.status {
                     case .bluetoothOff:
@@ -228,7 +229,7 @@ struct StrapChooser: View {
                     if monitor.candidates.isEmpty {
                         HStack(spacing: 12) {
                             ProgressView()
-                            Text("looking for heart-rate straps…").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                            Text(forSleep ? "looking for Helio Strap…" : "looking for heart-rate straps…").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                         }
                         .frame(minHeight: 44)
                     }

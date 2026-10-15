@@ -3,6 +3,30 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
+    @MainActor func testDirectSleepSetupDoesNotRequireAppleHealth() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.buttons["helio-setup"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["connect Apple Health"].exists)
+        capture(app, "direct sleep source")
+        app.buttons["helio-setup"].tap()
+        XCTAssertTrue(app.secureTextFields["helio-key"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["helio-save"].isEnabled)
+        XCTAssertTrue(app.buttons["choose"].exists)
+        capture(app, "Helio one-time setup")
+        app.buttons["close"].tap()
+        app.segmentedControls["sleep-source"].buttons["Apple Health"].tap()
+        XCTAssertTrue(app.buttons["connect Apple Health"].waitForExistence(timeout: 5))
+        capture(app, "optional Apple Health source")
+        app.segmentedControls["sleep-source"].buttons["Helio Strap"].tap()
+        XCTAssertTrue(app.buttons["helio-setup"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["connect Apple Health"].exists)
+    }
+
     @MainActor func testSleepShowsRecordedStagesAndTrends() {
         continueAfterFailure = false
         let app = XCUIApplication()

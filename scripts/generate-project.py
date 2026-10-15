@@ -70,8 +70,15 @@ appSources = phase('app-sources', 'PBXSourcesBuildPhase', app_sources)
 testSources = phase('test-sources', 'PBXSourcesBuildPhase', test_sources)
 uitestSources = phase('uitest-sources', 'PBXSourcesBuildPhase', uitest_sources)
 resources = phase('resources', 'PBXResourcesBuildPhase', [assets] + bundled)
+helioPackage = add('helio-package', {'isa': 'XCLocalSwiftPackageReference', 'relativePath': 'Packages/HelioProtocol'})
+helioProduct = add('helio-product', {'isa': 'XCSwiftPackageProductDependency', 'productName': 'ZeppKit'})
+helioTestingProduct = add('helio-testing-product', {'isa': 'XCSwiftPackageProductDependency', 'productName': 'ZeppKitTesting'})
+helioBuild = add('helio-framework', {'isa': 'PBXBuildFile', 'productRef': helioProduct})
+helioTestBuild = add('helio-test-framework', {'isa': 'PBXBuildFile', 'productRef': helioTestingProduct})
 appFrameworks = phase('app-frameworks', 'PBXFrameworksBuildPhase', [])
+objects[appFrameworks]['files'].append(helioBuild)
 testFrameworks = phase('test-frameworks', 'PBXFrameworksBuildPhase', [])
+objects[testFrameworks]['files'].append(helioTestBuild)
 uitestFrameworks = phase('uitest-frameworks', 'PBXFrameworksBuildPhase', [])
 
 common = {'COPY_PHASE_STRIP': 'NO', 'LM_SKIP_METADATA_EXTRACTION': 'YES', 'CLANG_ENABLE_MODULES': 'YES', 'CLANG_ENABLE_OBJC_ARC': 'YES',
@@ -114,13 +121,13 @@ testConfigs = configs('tests', testSettings)
 uitestConfigs = configs('uitests', uitestSettings)
 appTarget = add('app-target', {'isa': 'PBXNativeTarget', 'buildConfigurationList': appConfigs, 'buildPhases': [appSources, appFrameworks, resources],
                                'buildRules': [], 'dependencies': [], 'name': 'Vitals', 'productName': 'Vitals', 'productReference': app,
-                               'packageProductDependencies': [], 'productType': 'com.apple.product-type.application'})
+                               'packageProductDependencies': [helioProduct], 'productType': 'com.apple.product-type.application'})
 proxy = add('test-proxy', {'isa': 'PBXContainerItemProxy', 'containerPortal': uid('project'), 'proxyType': '1', 'remoteGlobalIDString': appTarget,
                            'remoteInfo': 'Vitals'})
 dep = add('test-dependency', {'isa': 'PBXTargetDependency', 'target': appTarget, 'targetProxy': proxy})
 testTarget = add('test-target', {'isa': 'PBXNativeTarget', 'buildConfigurationList': testConfigs, 'buildPhases': [testSources, testFrameworks],
                                  'buildRules': [], 'dependencies': [dep], 'name': 'VitalsTests', 'productName': 'VitalsTests',
-                                 'productReference': tests, 'productType': 'com.apple.product-type.bundle.unit-test'})
+                                 'productReference': tests, 'packageProductDependencies': [helioTestingProduct], 'productType': 'com.apple.product-type.bundle.unit-test'})
 uiproxy = add('uitest-proxy', {'isa': 'PBXContainerItemProxy', 'containerPortal': uid('project'), 'proxyType': '1', 'remoteGlobalIDString': appTarget,
                                'remoteInfo': 'Vitals'})
 uidep = add('uitest-dependency', {'isa': 'PBXTargetDependency', 'target': appTarget, 'targetProxy': uiproxy})
@@ -134,7 +141,7 @@ project = add('project', {'isa': 'PBXProject',
                                                               uitestTarget: {'CreatedOnToolsVersion': '26.6', 'TestTargetID': appTarget}}},
                           'buildConfigurationList': projectConfigs, 'compatibilityVersion': 'Xcode 14.0', 'developmentRegion': 'en',
                           'hasScannedForEncodings': '0', 'knownRegions': ['en', 'Base'], 'mainGroup': main, 'productRefGroup': products,
-                          'packageReferences': [], 'projectDirPath': '', 'projectRoot': '', 'targets': [appTarget, testTarget, uitestTarget]})
+                          'packageReferences': [helioPackage], 'projectDirPath': '', 'projectRoot': '', 'targets': [appTarget, testTarget, uitestTarget]})
 output = '// !$*UTF8*$!\n' + serialize({'archiveVersion': '1', 'classes': {}, 'objectVersion': '56', 'objects': objects, 'rootObject': project}) + '\n'
 (root / 'Vitals.xcodeproj').mkdir(exist_ok=True)
 (root / 'Vitals.xcodeproj/project.pbxproj').write_text(output)

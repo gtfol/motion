@@ -1,6 +1,6 @@
 import Foundation
 
-enum SleepStage: String, CaseIterable, Sendable {
+enum SleepStage: String, CaseIterable, Codable, Sendable {
     case awake, rem, core, deep, asleep
 
     var label: String {
@@ -24,7 +24,7 @@ enum SleepStage: String, CaseIterable, Sendable {
     }
 }
 
-struct SleepSegment: Identifiable, Equatable, Sendable {
+struct SleepSegment: Identifiable, Equatable, Codable, Sendable {
     let start: Date
     let end: Date
     let stage: SleepStage
@@ -32,7 +32,7 @@ struct SleepSegment: Identifiable, Equatable, Sendable {
     var duration: TimeInterval { end.timeIntervalSince(start) }
 }
 
-struct SleepReading: Identifiable, Sendable {
+struct SleepReading: Identifiable, Codable, Sendable {
     let id: UUID
     let date: Date
     let value: Double

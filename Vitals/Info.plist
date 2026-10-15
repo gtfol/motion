@@ -15,7 +15,7 @@
 <key>LSRequiresIPhoneOS</key><true/>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UIAppFonts</key><array><string>Lato-Regular.ttf</string></array>
-<key>NSBluetoothAlwaysUsageDescription</key><string>motion connects to the heart rate strap you choose to show and record your heart rate during workouts.</string>
+<key>NSBluetoothAlwaysUsageDescription</key><string>motion connects to the strap you choose to record workout heart rate and sync sleep, overnight heart rate and breathing rate.</string>
 <key>NSHealthUpdateUsageDescription</key><string>motion saves each finished workout and the heart-rate samples it received to Apple Health.</string>
 <key>NSHealthShareUsageDescription</key><string>motion reads sleep stages, heart rate and respiratory rate to show your sleep and breathing trends on this iPhone. it also reads workouts to prevent duplicate saves.</string>
 <key>UIBackgroundModes</key><array><string>bluetooth-central</string></array>

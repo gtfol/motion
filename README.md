@@ -20,7 +20,7 @@ The App Store name is **motion: your fitness companion**; the iPhone name is **m
 - **Heart rate.** A compact strip above the set log shows workout time, connection state, last sample time, large live BPM, average and maximum, and a small chart. Heart rate never blocks set entry. A dropout shows as a gap; motion reconnects on its own and never fills in missing readings.
 - **Finish.** Review duration, exercises, completed working sets, volume, new bests and heart rate. motion saves locally first, then writes one workout to Apple Health if allowed, and shows the two results separately. A failed export can be retried without creating a duplicate.
 - **History** lists finished sessions with date, activity, duration, exercise and working-set counts, volume and heart rate. Detail shows the ordered sets (editable), new-best notes, the heart-rate chart and Apple Health status with retry. Exercise history shows past sets and bests.
-- **Sleep** reads Apple Health after an explicit connection: nightly duration and stages, overnight heart rate and respiratory rate, and seven-day duration, schedule and rate charts. It uses one sleep source at a time, resolves overlapping records, and shows the longest period ending on each date. Missing data stays blank. Rate charts show recorded samples; averages exclude awake and unrecorded intervals. Rate sources are named and never interleaved. These measurements are read on demand and never enter the workout store or cloud sync. Zepp data appears only if Zepp exports it to Health; direct strap sleep recording, Zepp scores and hypopnea are not supported.
+- **Sleep** can sync stored sleep stages, overnight heart rate and respiratory rate directly from a selected Helio Strap over Bluetooth after one-time band-key setup. Apple Health remains an optional source. It shows nightly duration/stages and seven-day duration, schedule and rate charts, using one source at a time. Missing data stays blank; averages exclude awake and unrecorded intervals. Direct readings are stored locally per account and strap; the key stays in this device’s Keychain. Neither enters workout cloud sync. Motion never deletes band history or changes recording settings. No Zepp cloud account integration is needed. See [direct sleep setup and verification](docs/helio-sleep.md); real-hardware validation is still required. Zepp scores and hypopnea are not supported.
 - **Settings:** Google sign-in, sync status, conflict review, sign-out and account deletion; lb/kg, default rest, optional age for an approximate zone tint, the strap (choose, reconnect, forget, battery when reported), and the Apple Health explanation.
 
 ## Calculations
@@ -53,7 +53,7 @@ HealthKit receives a copy of each finished workout and the heart-rate samples mo
 
 - motion uses `HKWorkoutBuilder` (iOS 12+): `beginCollection(at:)`, `addSamples(_:)` with timestamped heart-rate `HKQuantitySample`s from the strap, `addMetadata(_:)`, `endCollection(at:)`, `finishWorkout()`. The activity type follows the session (traditional strength training, running, walking, cycling, other); strength is marked indoor.
 - `HKWorkoutSession(healthStore:configuration:)` and `HKLiveWorkoutBuilder` on iPhone are iOS 26 APIs ([WWDC25 session 322](https://developer.apple.com/videos/play/wwdc2025/322/)), so they aren't used. There is no optional iOS 26 path in v1. The deployment target stays iOS 17.
-- Workout permissions: write workouts and heart rate; read workouts to look for an earlier save before retrying. Connecting Sleep separately requests read-only sleep analysis, heart rate and respiratory rate. HealthKit does not disclose whether read access was denied, so empty results explain both permission and missing-record possibilities. No energy is written.
+- Workout permissions: write workouts and heart rate; read workouts to look for an earlier save before retrying. Choosing Apple Health in Sleep separately requests read-only sleep analysis, heart rate and respiratory rate. HealthKit does not disclose whether read access was denied, so empty results explain both permission and missing-record possibilities. No energy is written.
 - Idempotent retry: the workout carries `HKMetadataKeySyncIdentifier` (`vitals.workout.<session id>`) and a sync version, and every heart-rate sample carries its own. HealthKit ignores a repeated save with the same identifier and version ([WWDC20 session 10184](https://developer.apple.com/videos/play/wwdc2020/10184/)). A retry first queries for the workout by that identifier. The "saving" state is stored before anything is written, so an interrupted export is found at launch and marked retryable.
 - States: not exported yet, saving, saved, not saved (retry), not allowed, unavailable. A session saved with the Health data unavailable or access denied remains fully usable.
 - A session with no heart-rate samples is still a valid workout; one with no completed sets is saved as a heart-rate workout.
@@ -86,6 +86,7 @@ From capsule and freewrite: the quiet text bottom navigation (train · history �
 
 ```sh
 swift test                 # core calculations, parsing, timers (macOS or Linux)
+swift test --package-path Packages/HelioProtocol # Bluetooth protocol tests on macOS
 scripts/test-ios.sh        # simulator and device builds, then XCTest on an iPhone simulator (needs Xcode)
 ```
 
@@ -103,4 +104,4 @@ None of it exercises a real strap, Bluetooth background behavior or real HealthK
 - `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's.
 - `Vitals/Assets.xcassets/AppIcon.appiconset/AppIcon.png`: the approved runner illustration, committed as an opaque 1024 × 1024 app icon. Xcode generates the smaller sizes from this asset.
 
-Out of scope for v1: direct Zepp/Huami sync or overnight strap recording, hypopnea and sleep scoring, HRV and recovery, GPS and routes, Apple Watch app, nutrition, program builders, plate math, RPE, notifications, widgets.
+Out of scope for v1: Zepp cloud sync, continuous background sleep-sync guarantees, hypopnea and sleep scoring, HRV and recovery, GPS and routes, Apple Watch app, nutrition, program builders, plate math, RPE, notifications, widgets.

@@ -13,6 +13,7 @@ import SwiftUI
                     RootView()
                         .environment(services.coordinator)
                         .environment(services.monitor)
+                        .environment(services.helio)
                         .id(launch.viewID)
                         .disabled(launch.busy)
                         .modelContainer(services.container)
@@ -57,6 +58,10 @@ import SwiftUI
     init() {
         #if DEBUG
         testing = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+        if testing {
+            UserDefaults.standard.set("helio", forKey: "sleep-source")
+            UserDefaults.standard.set(false, forKey: "sleep-health-requested")
+        }
         #else
         testing = false
         #endif
@@ -175,7 +180,10 @@ import SwiftUI
             try await cloud.deleteAccount(owner: owner)
             try activate(nil)
             try await cloud.signOut()
-            do { try FileManager.default.removeItem(at: accountDirectory(owner)) }
+            do {
+                try HelioBandKeys.removeAll(scope: HelioSleepRepository(directory: accountDirectory(owner)).keyScope)
+                try FileManager.default.removeItem(at: accountDirectory(owner))
+            }
             catch { message = "your cloud account was deleted, but the local copy couldn’t be removed from this iPhone." }
         } catch {
             message = "couldn’t finish deleting the account. sign in again and retry."
@@ -198,6 +206,7 @@ struct UnavailableHealthExporter: WorkoutExporting {
     let container: ModelContainer
     let store: WorkoutStore
     let monitor: HeartRateMonitor
+    let helio: HelioSleepSync
     let coordinator: SessionCoordinator
 
     init(directory: URL, exporter: any WorkoutExporting = HealthKitExporter(), activateBluetooth: Bool = true, seedCatalog: Bool = true) throws {
@@ -206,6 +215,9 @@ struct UnavailableHealthExporter: WorkoutExporting {
         let preferences = try store.preferences()
         let monitor = HeartRateMonitor(restoreIdentifier: "\(Bundle.main.bundleIdentifier ?? "vitals").heart-rate",
                                        strapID: preferences.strapID, strapName: preferences.strapName)
+        let helio = HelioSleepSync(directory: directory)
+        monitor.configureHelio(helio)
+        self.helio = helio
         let coordinator = SessionCoordinator(store: store, exporter: exporter)
         monitor.onReading = { [weak coordinator, weak monitor] reading in
             coordinator?.receive(reading, strapName: monitor?.strapName)
