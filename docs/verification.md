@@ -6,14 +6,18 @@
 
 - **Apple Health access (build 10):** 86 iOS unit tests and two Settings UI scenarios pass. The access regression covers initial authorization, immediate data refresh, repeated taps opening the access guide, opening the actual Health app, returning to Motion and refreshing again, then displaying the readable sleep data. Four authorization tests cover a previously answered request, unknown request status, status/request failures and unavailable Health. The UI test uses synthetic authorization responses and measurements; native permission choices still need a physical-device check. The flow uses Apple's [authorization request status](https://developer.apple.com/documentation/healthkit/hkhealthstore/getrequeststatusforauthorization(toshare:read:completion:)) to distinguish a new prompt from management; it never treats request completion as permission granted. Health's root URL scheme was verified in the simulator app's registered URL types and by the handoff UI test.
 
-The first build 10 archive (`9ec996a`) passed signature and version checks, but its
-upload could not read Xcode's Apple account token while the Mac was locked. It does
-not include the later Apple Health access fix (`bd6616b`) or daily/weekly Sleep
-views, so do not upload it.
-The replacement archive stalled in Apple's asset tool while the Mac remained
-locked and was cancelled. After unlocking, archive the current branch as build 10
-and retry upload; no build 10 upload has succeeded. Build 9 is still the latest
-successfully uploaded package below.
+Build 10's final signed archive now includes `ed24ee3` (strap transfer recovery,
+Apple Health access and daily/weekly Sleep). Signature, version, bundle identifier
+and phone label checks pass. The October 15 14:53 PDT export still failed with a
+missing Xcode account token while the Mac was locked. After unlocking, retry the
+final archive; no build 10 upload has succeeded. The older `9ec996a` archive is
+superseded and must not be uploaded. Build 9 remains the latest uploaded package.
+
+The full [iPhone build and test job](https://github.com/gtfol/motion/actions/runs/38805496774/job/116665956429)
+passed for `ed24ee3`. Its separate Foundation-only package job accidentally included
+the new app-only Health authorization test. Adding that file to the existing
+exclusion list restores the intended test targets; 50 core and 118 protocol tests
+pass locally. The four Health authorization tests remain in the passing iOS suite.
 
 - **Strap transfer recovery (build 10):** 118 protocol tests, 82 iOS unit tests and the Settings UI check pass. New regressions cover zero-stage records alongside valid nights, later staging without erasing a saved night, malformed stage tables/times/overlaps with independent HR and breathing downloads, and actual local-write failure. Rejected rounds keep band history and saved cursors; content errors now identify the failing validation instead of claiming storage failed. The Settings action is named **strap settings**. The first incremental simulator build used a stale package interface; a fresh build and all targeted tests pass. The user's October 15 screenshot confirms authentication reached history processing; its generic error cannot establish the exact failed check, and a successful physical-band retry is still required. Build 9's full [CI run](https://github.com/gtfol/motion/actions/runs/38799306593) also passed.
 
