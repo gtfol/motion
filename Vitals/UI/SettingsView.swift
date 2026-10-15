@@ -26,12 +26,6 @@ struct SettingsTab: View {
             .scrollDismissesKeyboard(.interactively)
             .vitalsScreen()
             .vitalsTitle("settings")
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("done") { Keyboard.dismiss() }.accessibilityIdentifier("keyboard-done")
-                }
-            }
             .sheet(isPresented: $choosingStrap) { StrapChooser() }
             .onAppear { ageText = coordinator.age.map { "\($0)" } ?? "" }
         }

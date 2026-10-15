@@ -1,17 +1,18 @@
 import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case train, history, settings
+    case train, history, sleep, settings
     var id: String { rawValue }
 }
 
-/// Three tabs under a quiet text bar, following capsule's freewrite-style bottom navigation.
+/// Tabs under a quiet text bar, following capsule's freewrite-style bottom navigation.
 /// All tabs stay alive so switching never loses a tab's place.
 struct RootView: View {
     @Environment(SessionCoordinator.self) private var coordinator
     @Environment(AppLaunch.self) private var launch
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab: AppTab = .train
+    @State private var keyboardVisible = false
 
     var body: some View {
         // The bar is stacked under the pages, not added as a safe-area inset: a NavigationStack doesn't pass an
@@ -20,11 +21,32 @@ struct RootView: View {
             ZStack {
                 page(.train) { TrainTab() }
                 page(.history) { HistoryTab() }
+                page(.sleep) { SleepTab(active: tab == .sleep) }
                 page(.settings) { SettingsTab() }
             }
-            BottomNavigation(tab: $tab)
+            if keyboardVisible {
+                // The active rest bar owns the dismiss action while it is visible.
+                if tab != .train || coordinator.activeSession?.restTimer == nil {
+                    HStack {
+                        Spacer()
+                        TextAction("done") { Keyboard.dismiss() }
+                            .accessibilityIdentifier("keyboard-done")
+                    }
+                    .padding(.horizontal, VitalsStyle.gutter)
+                    .background(VitalsStyle.canvas)
+                }
+            } else {
+                BottomNavigation(tab: $tab)
+            }
         }
+        .environment(\.keyboardVisible, keyboardVisible)
         .background(VitalsStyle.canvas)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { coordinator.heartbeat() }
             if phase == .active { coordinator.refreshHealthAccess(); launch.sync?.schedule(immediate: true) }
@@ -55,7 +77,7 @@ private struct BottomNavigation: View {
     var body: some View {
         VStack(spacing: 0) {
             Hairline()
-            HStack(spacing: 32) {
+            HStack(spacing: 20) {
                 ForEach(AppTab.allCases) { item in
                     Button { tab = item } label: {
                         HStack(spacing: 6) {

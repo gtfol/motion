@@ -166,6 +166,17 @@ struct TextAction: View {
     }
 }
 
+private struct KeyboardVisibleKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var keyboardVisible: Bool {
+        get { self[KeyboardVisibleKey.self] }
+        set { self[KeyboardVisibleKey.self] = newValue }
+    }
+}
+
 @MainActor enum Keyboard {
     static func dismiss() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)

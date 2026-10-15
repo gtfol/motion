@@ -2,7 +2,10 @@
 
 ## What has been checked
 
-Status as of October 1, 2026. Motion 0.1 (5) is accepted and Testing in TestFlight. The following sync work is on the next-build branch and has not been uploaded.
+Status as of October 15, 2026. Motion 0.1 (6) is Testing in TestFlight. The routine control spacing, keyboard layout fix and Sleep tab are newer changes, not yet uploaded.
+
+- **Sleep and breathing:** 43 Foundation tests and the full iOS suite (65 unit tests, 7 UI tests) pass; the unsigned Release device build succeeds. Foundation tests cover overlapping/duplicate records, wake-date grouping, separate naps, daylight-saving duration, missing intervals, and asleep-only averages. Simulator UI tests cover sample sleep stages/trends and empty results. The test measurements are synthetic and DEBUG-only; they do not establish which measurements Zepp exports to Apple Health. Real-device HealthKit reads remain to be checked.
+- **Workout keyboard:** simulator test confirms all bottom navigation buttons disappear while typing, the rest bar remains above the keyboard, done saves the entered load, and the navigation returns without stopping rest. Screenshot inspection confirms no extra toolbar or black gap; iOS 26's keyboard accessibility frame excludes its 17-point rounded top inset.
 
 - **Cloud sync:** 37 core tests and 56 iOS unit tests pass locally, including seven two-store/persistence sync scenarios. The release device build passes. PostgreSQL account-isolation/CAS/tombstone tests and three Edge Function authorization tests pass, also in [backend CI](https://github.com/gtfol/motion/actions/runs/36930745337). The Data API is enabled, and unauthenticated table/RPC access is denied as expected. Live Google OAuth and authenticated cross-installation sync still need the provider configuration; see [sync setup](sync.md).
 - **Sync build CI:** the [full iPhone workflow](https://github.com/gtfol/motion/actions/runs/36931366102) passed for `25d30a4`, including simulator/device builds and the existing workout UI test. The earlier local keyboard-focus failure did not recur in that run.
@@ -40,6 +43,10 @@ Strap
 - [ ] Heart Rate Push off: status says no heart rate and points to Zepp.
 
 Apple Health
+- [ ] Connect Sleep on an iPhone with existing Health data; compare wake date, duration and stages with the selected Health source.
+- [ ] Verify which Helio/Zepp sleep stages, heart-rate and respiratory-rate samples are shared with Health. Zepp-only metrics must remain unavailable, not estimated.
+- [ ] Deny sleep or respiratory read access, then revoke previously allowed access: reload clears old data and explains empty results without claiming to know permission status.
+- [ ] Check multiple recorders and source switching; a night must never be counted twice. Test after a time-zone change.
 - [ ] With access allowed, finish a workout: exactly one workout with the right type, start and end, and the received heart-rate samples appears in the Health app.
 - [ ] Force a failure (for example, finish while access is off, then turn it on) and retry: still exactly one workout. Retry again from history: nothing new is written.
 - [ ] A workout with no heart-rate samples saves as a workout; a strength session with no completed sets saves as a heart-rate workout.

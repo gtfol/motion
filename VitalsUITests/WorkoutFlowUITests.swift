@@ -3,6 +3,74 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
+    @MainActor func testSleepShowsRecordedStagesAndTrends() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-sleep"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m")
+        capture(app, "sleep stages sample measurements")
+        app.swipeUp()
+        XCTAssertTrue(app.staticTexts["breathing rate"].firstMatch.waitForExistence(timeout: 5))
+        capture(app, "sleep heart and breathing measurements")
+        app.swipeUp()
+        capture(app, "sleep duration and schedule")
+        app.swipeUp()
+        capture(app, "sleep weekly trends")
+    }
+
+    @MainActor func testSleepWithoutReadableDataExplainsConnection() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-sleep", "-ui-testing-sleep-empty"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["sleep-duration"].exists)
+        XCTAssertTrue(app.buttons["refresh measurements"].exists)
+        capture(app, "sleep without readable measurements")
+    }
+
+    @MainActor func testWorkoutKeyboardHidesNavigationAndKeepsRestFlush() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+        XCTAssertTrue(app.buttons["start-strength"].waitForExistence(timeout: 15))
+        app.buttons["start-strength"].tap()
+        add("bench press", in: app)
+        enter("135", into: app.textFields["bench press-1-load"], in: app)
+        enter("5", into: app.textFields["bench press-1-reps"], in: app)
+        app.buttons["bench press-1-done"].tap()
+        app.buttons["add-set-bench press"].tap()
+
+        let field = app.textFields["bench press-2-load"]
+        field.tap()
+        field.typeText("145")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["tab-train"].exists)
+        XCTAssertFalse(app.buttons["tab-history"].exists)
+        XCTAssertFalse(app.buttons["tab-sleep"].exists)
+        XCTAssertFalse(app.buttons["tab-settings"].exists)
+        let rest = app.otherElements["rest-bar"]
+        XCTAssertTrue(rest.exists)
+        // iOS 26's keyboard accessibility frame starts 17 pt below its rounded background.
+        // The attached screenshot verifies the backgrounds touch; reject an extra toolbar/nav row.
+        let keyboardInset = app.keyboards.firstMatch.frame.minY - rest.frame.maxY
+        XCTAssertGreaterThanOrEqual(keyboardInset, -2, "the rest bar must not overlap the keyboard")
+        XCTAssertLessThanOrEqual(keyboardInset, 20, "no navigation or toolbar gap above the keyboard")
+        XCTAssertTrue(rest.buttons["keyboard-done"].exists, "dismiss typing inside the rest bar")
+        capture(app, "rest directly above keyboard")
+        app.buttons["keyboard-done"].tap()
+        XCTAssertTrue(app.buttons["tab-train"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        XCTAssertEqual(field.value as? String, "145", "dismissing the keyboard saves the entered load")
+        XCTAssertTrue(app.buttons["rest-skip"].exists, "dismissing typing keeps the rest timer running")
+    }
+
     @MainActor func testRoutineTargetControlsDoNotOverlap() {
         continueAfterFailure = false
         let app = XCUIApplication()

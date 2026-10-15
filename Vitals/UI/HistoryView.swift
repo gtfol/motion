@@ -172,12 +172,6 @@ struct SessionDetailView: View {
             .padding(VitalsStyle.gutter)
         }
         .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("done") { Keyboard.dismiss() }.accessibilityIdentifier("keyboard-done")
-            }
-        }
         .sheet(isPresented: $picking) {
             ExercisePicker { exercise in coordinator.perform { try coordinator.store.addExercise(exercise, to: session) } }
         }

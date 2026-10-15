@@ -70,10 +70,6 @@ struct ActiveSessionView: View {
                     .accessibilityIdentifier("finish-workout")
             }
             .quietBackground()
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("done") { Keyboard.dismiss() }.accessibilityIdentifier("keyboard-done")
-            }
         }
         .sheet(isPresented: $picking) {
             ExercisePicker { exercise in coordinator.add(exercise) }
@@ -117,6 +113,7 @@ struct SessionClock: View {
 /// There are no notifications; the clock is in the app only.
 struct RestBar: View {
     @Environment(SessionCoordinator.self) private var coordinator
+    @Environment(\.keyboardVisible) private var keyboardVisible
     let session: WorkoutSession
 
     var body: some View {
@@ -139,12 +136,19 @@ struct RestBar: View {
                         TextAction("+30s") { coordinator.extendRest() }.accessibilityLabel("add 30 seconds of rest")
                             .accessibilityIdentifier("rest-extend")
                         TextAction(over ? "done" : "skip") { coordinator.skipRest() }.accessibilityIdentifier("rest-skip")
+                        if keyboardVisible {
+                            TextAction("done") { Keyboard.dismiss() }
+                                .accessibilityLabel("done typing")
+                                .accessibilityIdentifier("keyboard-done")
+                        }
                     }
                 }
                 .padding(.horizontal, VitalsStyle.gutter)
                 .padding(.vertical, 6)
             }
             .background(VitalsStyle.caution.opacity(0.06).background(VitalsStyle.canvas))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("rest-bar")
         }
     }
 }
