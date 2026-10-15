@@ -3,6 +3,39 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
+    @MainActor func testRoutineTargetControlsDoNotOverlap() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+        XCTAssertTrue(app.buttons["new routine"].waitForExistence(timeout: 15))
+        app.buttons["new routine"].tap()
+        let alert = app.alerts["new routine"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.textFields.firstMatch.tap()
+        alert.textFields.firstMatch.typeText("chest")
+        alert.buttons["create"].tap()
+        XCTAssertTrue(app.buttons["add exercise"].waitForExistence(timeout: 5))
+        app.buttons["add exercise"].tap()
+        XCTAssertTrue(app.buttons["pick-bench press"].waitForExistence(timeout: 5))
+        app.buttons["pick-bench press"].tap()
+
+        let sets = app.steppers["routine-target-sets"]
+        let reps = app.steppers["routine-target-reps"]
+        XCTAssertTrue(sets.waitForExistence(timeout: 5))
+        XCTAssertTrue(reps.exists)
+        XCTAssertGreaterThanOrEqual(reps.frame.minY - sets.frame.maxY, 8,
+                                    "set and rep controls must have separate touch areas")
+        let originalReps = reps.label
+        sets.buttons["routine-target-sets-Increment"].tap()
+        XCTAssertTrue(sets.label.contains("4 sets"))
+        XCTAssertEqual(reps.label, originalReps, "changing sets must not change reps")
+        reps.buttons["routine-target-reps-Increment"].tap()
+        XCTAssertTrue(reps.label.contains("1 reps"))
+        XCTAssertTrue(sets.label.contains("4 sets"))
+        capture(app, "routine target controls")
+    }
+
     @MainActor func testFirstSignInCanImportLocalLog() {
         finishFirstSignIn(using: "add my local log")
     }

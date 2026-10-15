@@ -113,16 +113,22 @@ private struct RoutineEntryRow: View {
     let entry: RoutineExercise
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(entry.exercise?.name ?? "removed exercise")
             Stepper(value: Binding(get: { entry.targetSets ?? 0 }, set: { update(sets: $0, reps: entry.targetReps) }), in: 0...20) {
                 Text(entry.targetSets.map { "\($0) \($0 == 1 ? "set" : "sets")" } ?? "no set target")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
+            .frame(minHeight: 44)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("routine-target-sets")
             Stepper(value: Binding(get: { entry.targetReps ?? 0 }, set: { update(sets: entry.targetSets, reps: $0) }), in: 0...50) {
                 Text(entry.targetReps.map { "\($0) reps" } ?? "no rep target")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
+            .frame(minHeight: 44)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("routine-target-reps")
         }
         .padding(.vertical, 4)
     }
