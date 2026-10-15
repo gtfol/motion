@@ -124,6 +124,21 @@ final class FetchTests: XCTestCase {
         XCTAssertEqual(fetch.commit(roundID: round.id, durable: true), [])
     }
 
+    func testSkippingUnusableRoundKeepsHistoryAndStartsNextTypeWithoutAdvancing() throws {
+        var fetch = machine([(.hrv, sinceD), (.activity, sinceD)], now: sinceD + 86_400,
+                            policy: .deleteAfterDurableCommit)
+        XCTAssertEqual(fetch.skipType(roundID: 0), [])
+        _ = fetch.start(); _ = fetch.receiveControl(startReplyD); _ = fetch.receiveData(dataPacketD)
+        let round = try XCTUnwrap(readyRound(fetch.receiveControl(transferDoneD)))
+        XCTAssertEqual(fetch.skipType(roundID: round.id + 1), [])
+        XCTAssertEqual(fetch.phase, .awaitingCommit)
+        XCTAssertEqual(controls(fetch.skipType(roundID: round.id)), [[0x03, 0x09]])
+        XCTAssertEqual(fetch.skipType(roundID: round.id), [])
+        XCTAssertEqual(fetch.commit(roundID: round.id, durable: true), [])
+        XCTAssertEqual(controls(fetch.receiveControl(hex("10 03 01"))),
+                       [ZeppFetchCommand.start(.activity, since: sinceD, timeZone: plusTwo)])
+    }
+
     // MARK: Empty, refused, failed rounds (all keep, or no ack at all)
 
     func testZeroLengthRoundKeepsAndMovesOn() {

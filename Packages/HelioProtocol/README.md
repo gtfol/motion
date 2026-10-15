@@ -10,4 +10,8 @@ Only authentication, framing, history decoding and session primitives are includ
 the fake strap and its synthetic fixtures are test-only. Motion always uses the
 keep-on-device acknowledgement and never deletes band history.
 
+Motion's local adaptations distinguish zero-stage sleep records from malformed
+stage tables and let callers skip an unusable type while retaining its history on
+the strap and continuing the other requested types.
+
 Run tests on macOS: `swift test --scratch-path /private/tmp/motion-helio-protocol-tests`.

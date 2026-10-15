@@ -134,7 +134,7 @@ struct SettingsTab: View {
                     TextAction("forget", role: .destructive, secondary: true) { monitor.forget() }
                 }
                 if helio.supported {
-                    TextAction("sleep sync") { showingSleepSetup = true }
+                    TextAction("strap settings") { showingSleepSetup = true }
                         .accessibilityIdentifier("helio-setup")
                 }
             } else {

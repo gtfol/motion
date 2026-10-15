@@ -6,7 +6,7 @@ optional Apple Health access filling missing nights or metrics.
 
 ## Setup
 
-1. Open Settings → **strap** → **connect strap** (or **sleep sync** for an already selected Helio).
+1. Open Settings → **strap** → **connect strap** (or **strap settings** for an already selected Helio).
 2. Choose the same Helio Strap already paired with Zepp. Do not reset or unpair it.
 3. Retrieve its existing 32-hex-character authentication key using the
    [Gadgetbridge pairing guide](https://gadgetbridge.org/basics/pairing/huami-xiaomi-server/).
@@ -30,7 +30,7 @@ Missing readings remain blank. Pull-to-refresh reloads both available sources.
 
 The key is scoped to the Motion account and strap, stored using
 `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, and never displayed again.
-Remove it from strap setup to stop automatic direct sync. Account deletion removes
+Remove it from strap settings to stop automatic direct sync. Account deletion removes
 that account's band keys and local history. Signing out preserves its isolated copy.
 
 ## Data and connection
@@ -47,6 +47,11 @@ that account's band keys and local history. Signing out preserves its isolated c
 - CRC, lengths, packet order, plausible dates and sleep-stage intervals are checked.
   Bad transfers leave previous saved data and cursors intact. Interrupted transfers
   may retain earlier complete, verified rounds. Unknown stages stay gaps.
+- A zero-stage sleep record is an expected empty record and does not reject other
+  nights in the same transfer. An overflowing stage table, invalid dates or invalid
+  stage intervals still reject that type's round without advancing its saved cursor.
+  Motion then continues with independent heart-rate and breathing downloads. Content
+  errors identify the reason separately from failures writing the local archive.
 - Every fetch acknowledgement uses **keep on device** (`03 09`), including failures.
   Motion never sends the delete acknowledgement (`03 01`), sets the band clock,
   or changes sleep/heart-rate recording settings. Existing band settings determine
@@ -70,6 +75,9 @@ failure-path acknowledgement checks.
 ## Hardware validation still required
 
 Simulator tests establish the integration behavior, not real firmware compatibility.
+The October 15 device screenshot reached the history merge/save path after successful
+authentication. Its old generic error does not identify which validation or storage
+check failed; a completed real-device sync and timestamp comparison remain unverified.
 Before a public release, verify the following with the user's band key entered on
 their device:
 

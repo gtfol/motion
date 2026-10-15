@@ -357,6 +357,9 @@ public struct ZeppParsedRecords: Equatable {
     /// Records present on the wire but not kept (PAI type ≠ 05, a sleep session with no or too
     /// many stages).
     public let skippedRecords: Int
+    /// Sleep records whose stage count is zero: an expected absence of staging, not a malformed
+    /// stage table. Included in `skippedRecords`; callers can reject other skipped records separately.
+    public let unstagedSleepRecords: Int
     /// Time of the last record on the wire, kept or skipped; for per-minute types, the last minute.
     /// The next round's *since* is this + 1 minute (§6.4). nil when the round held no records.
     public let lastRecordTime: Date?
@@ -378,6 +381,7 @@ public enum ZeppRecordParser {
             throw Error.lengthViolation(type: type, length: data.count)
         }
         var skipped = 0
+        var unstagedSleep = 0
         var times = [Date]()
         let batch: ZeppRecordBatch
         switch type {
@@ -501,11 +505,13 @@ public enum ZeppRecordParser {
                     kept.append(session)
                 } else {
                     skipped += 1
+                    if r[0x054] == 0 { unstagedSleep += 1 }
                 }
             }
             batch = .sleepSession(kept)
         }
-        return ZeppParsedRecords(type: type, records: batch, skippedRecords: skipped, lastRecordTime: times.last)
+        return ZeppParsedRecords(type: type, records: batch, skippedRecords: skipped,
+                                 unstagedSleepRecords: unstagedSleep, lastRecordTime: times.last)
     }
 
     /// nil for a record with no staging (n = 0: skip, §6.6) or a stage count that would overrun

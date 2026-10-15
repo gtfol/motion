@@ -128,6 +128,7 @@ final class RecordParserTests: XCTestCase {
         XCTAssertEqual(r.count, 1)
         XCTAssertEqual(parsed.skippedRecords, 2)
         XCTAssertEqual(parsed.lastRecordTime, date(1_790_700_000))
+        XCTAssertEqual(parsed.unstagedSleepRecords, 0)
         XCTAssertEqual(r[0].lowZonePAI, 1.5)
         XCTAssertEqual(r[0].highZonePAI, 3.5)
         XCTAssertEqual([r[0].lowZoneMinutes, r[0].moderateZoneMinutes, r[0].highZoneMinutes], [10, 20, 30])
@@ -188,6 +189,7 @@ final class RecordParserTests: XCTestCase {
         XCTAssertEqual(sessions.first?.stages.count, 100)
         XCTAssertEqual(parsed.skippedRecords, 2)
         XCTAssertEqual(parsed.lastRecordTime, date(1_790_650_000))
+        XCTAssertEqual(parsed.unstagedSleepRecords, 1, "zero stages is distinct from an overflowing stage table")
     }
 
     // MARK: Length rules and hostile input

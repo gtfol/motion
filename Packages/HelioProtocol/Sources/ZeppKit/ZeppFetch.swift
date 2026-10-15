@@ -284,6 +284,16 @@ public struct ZeppHistoryFetch {
         return [.sendControl(ZeppFetchCommand.ack(mode))]
     }
 
+    /// The caller cannot use this round. Keep it on the strap and continue with the next type,
+    /// without advancing this type's cursor or retrying the same unusable content in this sync.
+    public mutating func skipType(roundID: Int) -> [Action] {
+        guard phase == .awaitingCommit, pendingRound?.id == roundID else { return [] }
+        pendingRound = nil
+        afterAck = .nextType
+        phase = .awaitingAckReply
+        return [.sendControl(ZeppFetchCommand.ack(.keep))]
+    }
+
     /// Stops the fetch. A round in progress is acked with `03 09` (keep) so the strap is not left
     /// mid-transfer; nothing is ever deleted by an abort.
     public mutating func abort() -> [Action] {

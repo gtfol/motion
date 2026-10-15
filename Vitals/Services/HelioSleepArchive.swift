@@ -27,22 +27,24 @@ struct HelioSleepArchive: Codable {
     }
 
     mutating func merge(_ round: ZeppFetchRound, now: Date) throws {
-        guard round.crcVerified else { throw HelioSleepError.invalidTransfer }
+        guard round.crcVerified else { throw HelioTransferError.unverified }
         let oldest = now.addingTimeInterval(-90 * 86_400)
         func valid(_ date: Date) -> Bool { date >= oldest && date <= now.addingTimeInterval(300) }
         switch round.parsed.records {
         case .sleepSession(let records):
-            guard round.parsed.skippedRecords == 0 else { throw HelioSleepError.invalidTransfer }
+            guard round.parsed.skippedRecords == round.parsed.unstagedSleepRecords else {
+                throw HelioTransferError.stageFormat
+            }
             for record in records {
                 guard valid(record.time), valid(record.sleepStart), valid(record.sleepEnd),
                       record.sleepEnd > record.sleepStart,
                       record.sleepEnd.timeIntervalSince(record.sleepStart) <= 36 * 3_600 else {
-                    throw HelioSleepError.invalidTransfer
+                    throw HelioTransferError.sleepDates
                 }
                 var segments: [SleepSegment] = []
                 for stage in record.stages {
                     guard stage.end > stage.start, stage.start >= record.sleepStart,
-                          stage.end <= record.sleepEnd else { throw HelioSleepError.invalidTransfer }
+                          stage.end <= record.sleepEnd else { throw HelioTransferError.stageBounds }
                     let kind: SleepStage
                     switch stage.kind {
                     case .light: kind = .core
@@ -51,15 +53,15 @@ struct HelioSleepArchive: Codable {
                     case .awake: kind = .awake
                     case .other: continue // Unknown firmware values stay gaps; do not invent sleep.
                     }
-                    if let previous = segments.last, stage.start < previous.end { throw HelioSleepError.invalidTransfer }
+                    if let previous = segments.last, stage.start < previous.end { throw HelioTransferError.stageOverlap }
                     segments.append(SleepSegment(start: stage.start, end: stage.end, stage: kind))
                 }
-                guard !segments.isEmpty else { throw HelioSleepError.invalidTransfer }
+                guard !segments.isEmpty else { throw HelioTransferError.unknownStages }
                 sessions.removeAll { $0.timestamp == record.time }
                 sessions.append(Session(timestamp: record.time, segments: segments))
             }
         case .activity(let records):
-            guard round.parsed.skippedRecords == 0, records.allSatisfy({ valid($0.time) }) else { throw HelioSleepError.invalidTransfer }
+            guard round.parsed.skippedRecords == 0, records.allSatisfy({ valid($0.time) }) else { throw HelioTransferError.readingDates }
             let points = records.compactMap { record -> SleepReading? in
                 guard valid(record.time), record.kind != ZeppActivityMinute.kindNotWorn,
                       record.kind != ZeppActivityMinute.kindCharging, let bpm = record.heartRate,
@@ -68,13 +70,13 @@ struct HelioSleepArchive: Codable {
             }
             heartRate = Self.merged(heartRate, points)
         case .sleepRespiratoryRate(let records):
-            guard round.parsed.skippedRecords == 0, records.allSatisfy({ valid($0.time) }) else { throw HelioSleepError.invalidTransfer }
+            guard round.parsed.skippedRecords == 0, records.allSatisfy({ valid($0.time) }) else { throw HelioTransferError.readingDates }
             let points = records.compactMap { record -> SleepReading? in
                 guard valid(record.time), (1...80).contains(record.breathsPerMinute) else { return nil }
                 return SleepReading(date: record.time, value: Double(record.breathsPerMinute))
             }
             respiratoryRate = Self.merged(respiratoryRate, points)
-        default: throw HelioSleepError.invalidTransfer
+        default: throw HelioTransferError.unsupportedRecord
         }
         sessions = sessions.filter { $0.timestamp >= oldest }.sorted { $0.timestamp < $1.timestamp }
         heartRate.removeAll { $0.date < oldest }; respiratoryRate.removeAll { $0.date < oldest }
@@ -88,7 +90,27 @@ struct HelioSleepArchive: Codable {
     }
 }
 
-enum HelioSleepError: Error { case invalidTransfer, storage, keychain }
+/// Content failures are distinct from a failed write. Never include raw records or keys in errors.
+enum HelioTransferError: Error {
+    case unverified, stageFormat, sleepDates, stageBounds, stageOverlap, unknownStages, readingDates, unsupportedRecord
+
+    func message(for type: ZeppFetchType) -> String {
+        switch self {
+        case .unverified: return "the strap’s transfer couldn’t be verified. pull down to retry."
+        case .stageFormat: return "Motion couldn’t read this strap’s sleep-stage format."
+        case .sleepDates: return "the strap returned a sleep record with unexpected dates."
+        case .stageBounds: return "the strap returned stages outside its recorded sleep period."
+        case .stageOverlap: return "the strap returned overlapping sleep stages."
+        case .unknownStages: return "this sleep record has no stages Motion recognizes."
+        case .readingDates:
+            let metric = type == .activity ? "heart-rate" : "breathing"
+            return "the strap returned \(metric) readings with unexpected dates."
+        case .unsupportedRecord: return "Motion couldn’t read this type of strap record."
+        }
+    }
+}
+
+enum HelioSleepError: Error { case storage, keychain }
 
 @MainActor final class HelioSleepRepository {
     let directory: URL

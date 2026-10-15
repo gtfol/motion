@@ -26,6 +26,7 @@ import Observation
     @ObservationIgnored private var keyRejected = false
     @ObservationIgnored private var unreadableStorage = false
     @ObservationIgnored private var failedTypes = Set<UInt8>()
+    @ObservationIgnored private var transferMessage: String?
     @ObservationIgnored private var syncDate = Date.now
     // Injected only by isolated tests; production always reads the device-only Keychain.
     @ObservationIgnored private let keyReader: ((UUID) throws -> ZeppAuthKey?)?
@@ -85,10 +86,10 @@ import Observation
             } catch { return }
         }
         guard supported, hasKey, !busy, !unreadableStorage else { return }
-        guard !keyRejected else { message = "the band rejected this key. replace it in strap setup."; return }
+        guard !keyRejected else { message = "the band rejected this key. replace it in strap settings."; return }
         if !force, let last = lastAttempt ?? archive.lastSync, Date.now.timeIntervalSince(last) < 15 * 60 { return }
         lastAttempt = .now
-        message = nil; failedTypes = []; pending = true; busy = true; status = "connecting to strap…"
+        message = nil; transferMessage = nil; failedTypes = []; pending = true; busy = true; status = "connecting to strap…"
         deadline = Task { [weak self] in
             try? await Task.sleep(for: .seconds(300))
             guard !Task.isCancelled else { return }
@@ -143,7 +144,7 @@ import Observation
                 catch { fail("couldn’t read this strap. try syncing again.") }
             case .authenticationFailed(let reason):
                 keyRejected = reason == .wrongAuthKey
-                fail(keyRejected ? "the band rejected this key. replace it in strap setup." : "couldn’t connect securely. close Zepp and try again.")
+                fail(keyRejected ? "the band rejected this key. replace it in strap settings." : "couldn’t connect securely. close Zepp and try again.")
             case .message(let message):
                 if message.wasEncrypted && message.trailerCRCMatches != true {
                     fail("the strap sent an incomplete reply. try syncing again."); return
@@ -193,8 +194,14 @@ import Observation
                     try repository.save(updated, strap: strapID)
                     archive = updated; revision += 1
                     let next = fetch!.commit(roundID: round.id, durable: true); handle(next)
+                } catch let error as HelioTransferError {
+                    failedTypes.insert(round.type.rawValue)
+                    if transferMessage == nil { transferMessage = error.message(for: round.type) }
+                    // An unusable sleep record must not block the independent HR/breathing fetches.
+                    // The uncommitted copy and cursor are discarded; the strap keeps the transfer.
+                    let next = fetch!.skipType(roundID: round.id); handle(next)
                 } catch {
-                    fail("couldn’t save this sleep transfer. your previous data and the band’s history are kept.")
+                    fail("couldn’t save measurements on this iPhone. unlock it and check available storage, then retry.")
                 }
             case .roundFailed(let type, _): failedTypes.insert(type.rawValue)
             case .noData: break
@@ -208,7 +215,9 @@ import Observation
                     } catch { fail("sleep was read, but the sync status couldn’t be saved."); return }
                 }
                 status = failedTypes.isEmpty ? "synced from Helio Strap" : "some measurements couldn’t sync"
-                if !failedTypes.isEmpty { message = "some records weren’t available from the band. pull down to retry." }
+                if !failedTypes.isEmpty {
+                    message = transferMessage ?? "some records weren’t available from the band. pull down to retry."
+                }
                 busy = false; pending = false; link = nil; fetch = nil; revision += 1
             }
         }

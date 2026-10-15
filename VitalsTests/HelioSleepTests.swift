@@ -85,6 +85,94 @@ final class HelioSleepTests: XCTestCase {
         rig.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), sleepBytes(invalid: invalid, endMinute: endMinute))
     }
 
+    @MainActor private func installReadings(_ rig: Rig) {
+        let readingDate = midnight.addingTimeInterval(-3600)
+        let start = ZeppFetchTimestamp.encode(readingDate, timeZone: TimeZone(secondsFromGMT: 0)!)
+        rig.device.fetchData[.activity] = (start, [0, 0, 0, 55, 0, 0, 0, 0])
+        rig.device.fetchData[.sleepRespiratoryRate] = (start, le(UInt32(readingDate.timeIntervalSince1970)) + [0, 13, 0, 0])
+    }
+
+    @MainActor func testUnstagedRecordDoesNotRejectValidSleepOrBlockMeasurements() throws {
+        let directory = try directory(), rig = rig(directory)
+        var unstaged = sleepBytes()
+        unstaged[0x54] = 0
+        let start = ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!)
+        rig.device.fetchData[.sleepSession] = (start, unstaged + sleepBytes())
+        installReadings(rig)
+        rig.run()
+        XCTAssertNil(rig.sync.message)
+        XCTAssertNotNil(rig.sync.archive.lastSync)
+        XCTAssertEqual(rig.sync.archive.nights.first?.asleepDuration, 7 * 3600)
+        XCTAssertEqual(rig.sync.archive.heartRate.first?.value, 55)
+        XCTAssertEqual(rig.sync.archive.respiratoryRate.first?.value, 13)
+        XCTAssertEqual(self.rig(directory).sync.archive.sessions.count, 1)
+    }
+
+    @MainActor func testUnstagedReplayKeepsExistingNightAndAllowsLaterStaging() throws {
+        let directory = try directory(), baseline = rig(directory)
+        installSleep(baseline); baseline.run()
+        let next = rig(directory)
+        var unstaged = sleepBytes()
+        unstaged[0x54] = 0
+        next.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), unstaged)
+        next.run()
+        XCTAssertNil(next.sync.message)
+        XCTAssertEqual(next.sync.archive.sessions.flatMap(\.segments), baseline.sync.archive.sessions.flatMap(\.segments))
+        installSleep(next, endMinute: 1860)
+        next.run()
+        XCTAssertNil(next.sync.message)
+        XCTAssertEqual(next.sync.archive.sessions.count, 1)
+        XCTAssertEqual(next.sync.archive.nights.first?.asleepDuration, 8 * 3600)
+    }
+
+    @MainActor func testUnsupportedSleepPreservesNightAndCursorButStillFetchesOtherMetrics() throws {
+        let directory = try directory(), baseline = rig(directory)
+        installSleep(baseline); baseline.run()
+        var invalidCases: [(bytes: [UInt8], message: String)] = []
+        var overflow = sleepBytes(); overflow[0x54] = 101
+        invalidCases.append((overflow, "sleep-stage format"))
+        invalidCases.append((sleepBytes(invalid: true), "outside its recorded sleep period"))
+        var overlap = sleepBytes()
+        overlap.replaceSubrange(0x5b..<0x5d, with: le(1439, count: 2))
+        invalidCases.append((overlap, "overlapping sleep stages"))
+        var future = sleepBytes()
+        future.replaceSubrange(0..<4, with: le(UInt32(Date.now.timeIntervalSince1970 + 86_400)))
+        invalidCases.append((future, "unexpected dates"))
+        var unknown = sleepBytes()
+        for index in 0..<3 { unknown[0x5a + index * 5] = 0x02 }
+        invalidCases.append((unknown, "no stages Motion recognizes"))
+        for invalid in invalidCases {
+            let broken = rig(directory)
+            broken.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), invalid.bytes)
+            installReadings(broken)
+            broken.run()
+            XCTAssertFalse(broken.sync.busy)
+            XCTAssertTrue(broken.sync.hasKey)
+            XCTAssertTrue(broken.sync.message?.contains(invalid.message) == true, broken.sync.message ?? "missing message")
+            XCTAssertEqual(broken.sync.archive.sessions.flatMap(\.segments), baseline.sync.archive.sessions.flatMap(\.segments))
+            XCTAssertEqual(broken.sync.archive.cursors["72"], baseline.sync.archive.cursors["72"])
+            XCTAssertEqual(broken.sync.archive.lastSync, baseline.sync.archive.lastSync)
+            XCTAssertEqual(broken.sync.archive.heartRate.first?.value, 55)
+            XCTAssertEqual(broken.sync.archive.respiratoryRate.first?.value, 13)
+        }
+    }
+
+    @MainActor func testStorageFailureIsDistinctFromUnusableRecordsAndKeepsHistory() throws {
+        let directory = try directory(), rig = rig(directory)
+        // A file where the history directory belongs makes the actual repository write fail.
+        let blocker = directory.appendingPathComponent("helio-sleep")
+        let original = Data("blocked directory".utf8)
+        try original.write(to: blocker)
+        installSleep(rig); rig.run()
+        XCTAssertFalse(rig.sync.busy)
+        XCTAssertTrue(rig.sync.hasKey)
+        XCTAssertEqual(rig.sync.message, "couldn’t save measurements on this iPhone. unlock it and check available storage, then retry.")
+        XCTAssertTrue(rig.sync.archive.sessions.isEmpty)
+        XCTAssertTrue(rig.sync.archive.cursors.isEmpty)
+        XCTAssertNil(rig.sync.archive.lastSync)
+        XCTAssertEqual(try Data(contentsOf: blocker), original)
+    }
+
     @MainActor func testAuthenticationFetchPersistenceAndReplay() throws {
         let directory = try directory(), rig = rig(directory)
         installSleep(rig)
