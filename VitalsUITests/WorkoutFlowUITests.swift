@@ -124,6 +124,7 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["start-strength"].waitForExistence(timeout: 10))
         app.buttons["tab-settings"].tap()
         XCTAssertTrue(app.buttons["sign out"].waitForExistence(timeout: 5), "the selected account becomes active without losing the presentation environment")
+        capture(app, "account settings")
     }
 
     @MainActor func testStrengthWorkoutFromStartToHistory() throws {

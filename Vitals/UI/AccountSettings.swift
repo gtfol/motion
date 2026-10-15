@@ -6,8 +6,8 @@ struct AccountSettings: View {
     @State private var signingOut = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeading(title: "account & sync")
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeading(title: "account")
             if launch.owner != nil {
                 Text(launch.email ?? "signed in").font(VitalsStyle.caption)
                 if let sync = launch.sync {
@@ -46,23 +46,18 @@ struct AccountSettings: View {
                     TextAction("sign out", secondary: true) { signingOut = true }
                     TextAction("delete account", role: .destructive, secondary: true) { deleting = true }
                 }.disabled(launch.busy || !launch.canSwitch)
-                Text("sign out keeps this account’s log on this iPhone. sign back into the same account to open it.")
-                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                DisclosureGroup("sign in again") { signInButtons }
+                    .accessibilityHint(launch.canSwitch ? "" : "finish your workout before changing accounts")
             } else if launch.configured {
-                Text("keep logging offline. sign in to sync workouts, sets, routines, exercises, workout heart rate and preferences across your devices.")
-                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                 signInButtons
             } else {
-                Text("cloud sync is being set up. your log is saved on this iPhone.")
+                Text("saved on this iPhone")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
-            if !launch.canSwitch { Text("finish your workout before changing accounts.").font(VitalsStyle.caption) }
             if let message = launch.message { Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution) }
         }
         .confirmationDialog("sign out?", isPresented: $signingOut, titleVisibility: .visible) {
             Button("sign out") { Task { await launch.signOut() } }
-        } message: { Text("unsynced changes stay on this iPhone. sign back into this account to sync them.") }
+        } message: { Text("unsynced changes stay on this iPhone.") }
         .confirmationDialog("permanently delete your account?", isPresented: $deleting, titleVisibility: .visible) {
             Button("delete account and synced data", role: .destructive) { Task { await launch.deleteAccount() } }
         } message: { Text("this removes your cloud account, all synced data and this account’s log on this iPhone. it can’t be undone. Apple Health copies and your separate local log are kept.") }
@@ -72,6 +67,7 @@ struct AccountSettings: View {
         VStack(alignment: .leading, spacing: 8) {
             TextAction("continue with Google") { Task { await launch.signIn() } }
         }.disabled(launch.busy || !launch.canSwitch)
+            .accessibilityHint(launch.canSwitch ? "" : "finish your workout before changing accounts")
     }
 }
 

@@ -39,8 +39,6 @@ struct SettingsTab: View {
                 Text("kg").tag(WeightUnit.kilograms)
             }
             .pickerStyle(.segmented)
-            Text("loads are stored exactly and shown in the unit you pick. switching never changes a logged set.")
-                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
         }
     }
 
@@ -56,8 +54,6 @@ struct SettingsTab: View {
                     Text(ClockText.duration(coordinator.restTarget)).monospacedDigit()
                 }
             }
-            Text("starts when you mark a set done. the clock is in the app only; there are no notifications.")
-                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
         }
     }
 
@@ -85,7 +81,6 @@ struct SettingsTab: View {
                     TextAction("clear", secondary: true) { ageText = ""; saveAge() }
                 }
             }
-            Text("used only for an approximate heart-rate zone tint.").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
         }
     }
 
@@ -131,7 +126,6 @@ struct SettingsTab: View {
                     TextAction("forget", role: .destructive, secondary: true) { monitor.forget() }
                 }
             } else {
-                Text("none chosen. workouts work without a strap.").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                 TextAction("choose strap") { choosingStrap = true }
             }
             if monitor.status == .bluetoothDenied { OpenSettingsLink() }
@@ -145,7 +139,7 @@ struct SettingsTab: View {
                 InfoButton(title: "Apple Health", paragraphs: [
                     "each finished workout is saved to Apple Health once, with its type, start and end, and the heart-rate samples motion received. sets and reps stay in motion.",
                     "motion doesn’t write calories and doesn’t promise activity-ring credit.",
-                    "motion reads workouts only to find one it already saved, so a retry can’t create a duplicate.",
+                    "motion reads workouts to prevent duplicate saves. connecting the sleep tab separately reads sleep, heart rate and breathing measurements on this iPhone.",
                     "without Apple Health access, everything still works in motion. cloud sync is a separate choice."
                 ])
                 Spacer()
@@ -153,18 +147,12 @@ struct SettingsTab: View {
             }
             switch coordinator.healthAccess {
             case .notDetermined:
-                Text("motion asks when you first finish a workout, or now.").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                 TextAction("allow Apple Health") { Task { await coordinator.requestHealthAccess() } }
             case .denied:
                 Text("motion can’t write workouts. change this in the Health app: tap your profile, then Apps → motion.")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-            case .allowed(let heartRate):
-                Text(heartRate ? "workouts and heart rate are saved when you finish."
-                     : "workouts are saved without heart rate, because writing heart rate isn’t allowed.")
-                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-            case .unavailable:
-                Text("Apple Health isn’t available on this device. workouts stay in motion.")
-                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+            case .allowed, .unavailable:
+                EmptyView()
             }
         }
     }
@@ -173,7 +161,7 @@ struct SettingsTab: View {
         switch coordinator.healthAccess {
         case .notDetermined: "not set up"
         case .denied: "not allowed"
-        case .allowed: "allowed"
+        case .allowed(let heartRate): heartRate ? "allowed" : "workouts only"
         case .unavailable: "unavailable"
         }
     }
@@ -181,8 +169,6 @@ struct SettingsTab: View {
     private var about: some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeading(title: "motion", detail: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
-            Text("your log is saved on this iPhone. sign in to sync it privately across your devices. no analytics. Apple Health gets a copy only if you allow it.")
-                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             if let message = coordinator.message {
                 Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
