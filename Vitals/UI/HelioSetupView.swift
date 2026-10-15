@@ -25,6 +25,11 @@ struct HelioSetupView: View {
                 Section {
                     if helio.hasKey {
                         Label("key saved on this iPhone", systemImage: "checkmark.lock")
+                        Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                        if let synced = helio.archive.lastSync {
+                            Text("last synced \(synced.formatted(date: .abbreviated, time: .shortened))")
+                                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                        }
                     }
                     SecureField(helio.hasKey ? "replacement key" : "32-character key", text: $key)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()

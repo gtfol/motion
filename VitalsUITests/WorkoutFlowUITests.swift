@@ -3,28 +3,35 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
-    @MainActor func testDirectSleepSetupDoesNotRequireAppleHealth() {
+    @MainActor func testSleepConnectionsLiveInSettings() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing"]
         app.launch()
         XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
         app.buttons["tab-sleep"].tap()
-        XCTAssertTrue(app.buttons["helio-setup"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["connect Apple Health"].exists)
-        capture(app, "direct sleep source")
-        app.buttons["helio-setup"].tap()
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["helio-setup"].isHittable)
+        XCTAssertFalse(app.buttons["sleep-health-connect"].isHittable)
+        XCTAssertFalse(app.segmentedControls["sleep-source"].exists)
+        XCTAssertFalse(app.buttons["refresh measurements"].exists)
+        XCTAssertFalse(app.staticTexts["from Helio Strap · stays on this iPhone"].exists)
+        capture(app, "simple sleep page")
+
+        app.buttons["tab-settings"].tap()
+        app.swipeUp()
+        let setup = app.buttons["helio-setup"]
+        XCTAssertTrue(setup.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["sleep-health-connect"].exists)
+        capture(app, "sleep connections in settings")
+        setup.tap()
         XCTAssertTrue(app.secureTextFields["helio-key"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["helio-save"].isEnabled)
         XCTAssertTrue(app.buttons["choose"].exists)
-        capture(app, "Helio one-time setup")
+        capture(app, "Helio setup from settings")
         app.buttons["close"].tap()
-        app.segmentedControls["sleep-source"].buttons["Apple Health"].tap()
-        XCTAssertTrue(app.buttons["connect Apple Health"].waitForExistence(timeout: 5))
-        capture(app, "optional Apple Health source")
-        app.segmentedControls["sleep-source"].buttons["Helio Strap"].tap()
-        XCTAssertTrue(app.buttons["helio-setup"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["connect Apple Health"].exists)
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
     }
 
     @MainActor func testSleepShowsRecordedStagesAndTrends() {
@@ -35,7 +42,11 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
         app.buttons["tab-sleep"].tap()
         XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m")
+        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m", "Health fills a missing Helio night automatically")
+        XCTAssertFalse(app.segmentedControls["sleep-source"].exists)
+        app.swipeDown()
+        XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m", "pull to refresh keeps one copy of the night")
         capture(app, "sleep stages sample measurements")
         app.swipeUp()
         XCTAssertTrue(app.staticTexts["breathing rate"].firstMatch.waitForExistence(timeout: 5))
@@ -54,7 +65,9 @@ final class WorkoutFlowUITests: XCTestCase {
         app.buttons["tab-sleep"].tap()
         XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["sleep-duration"].exists)
-        XCTAssertTrue(app.buttons["refresh measurements"].exists)
+        XCTAssertFalse(app.buttons["refresh measurements"].exists)
+        app.swipeDown()
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
         capture(app, "sleep without readable measurements")
     }
 

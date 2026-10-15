@@ -78,7 +78,63 @@ struct SleepNight: Identifiable, Sendable {
     }
 }
 
+struct SleepMeasurements: Sendable {
+    var nights: [SleepNight] = []
+    var heartRate: [SleepReading] = []
+    var respiratoryRate: [SleepReading] = []
+}
+
 enum SleepSummary {
+    /// Choose a whole sleep record for each wake date; never splice stages from two recorders.
+    /// Helio wins. Health fills missing nights and independently fills missing overnight metrics.
+    static func combined(helio: SleepMeasurements, health: [SleepMeasurements]) -> SleepMeasurements {
+        typealias Candidate = (night: SleepNight, recorder: Int?)
+        let primary: [Candidate] = helio.nights.map { ($0, nil) }
+        let fallback: [Candidate] = health.enumerated().flatMap { index, data in
+            data.nights.map { ($0, index) }
+        }.filter { !$0.night.segments.isEmpty && $0.night.asleepDuration > 0 }.sorted {
+            // Prefer a staged Health record, then the most complete night; source order breaks ties.
+            if $0.night.hasStages != $1.night.hasStages { return $0.night.hasStages }
+            if $0.night.asleepDuration != $1.night.asleepDuration { return $0.night.asleepDuration > $1.night.asleepDuration }
+            if $0.night.end != $1.night.end { return $0.night.end > $1.night.end }
+            return $0.recorder! < $1.recorder!
+        }
+        var chosen: [Candidate] = []
+        for candidate in primary + fallback {
+            let night = candidate.night
+            guard !night.segments.isEmpty, night.asleepDuration > 0 else { continue }
+            // A recorder can put the same sleep on a neighboring date; reject that duplicate too.
+            guard !chosen.contains(where: {
+                $0.night.day == night.day || ($0.night.start < night.end && night.start < $0.night.end)
+            }) else { continue }
+            chosen.append(candidate)
+        }
+        chosen.sort { $0.night.day < $1.night.day }
+        var result = SleepMeasurements(nights: chosen.map(\.night))
+        for candidate in chosen {
+            func readings(_ key: KeyPath<SleepMeasurements, [SleepReading]>) -> [SleepReading] {
+                let night = candidate.night
+                let direct = night.readings(helio[keyPath: key])
+                if night.average(direct) != nil { return direct }
+                let options = health.enumerated().map { index, data in
+                    (index: index, points: night.readings(data[keyPath: key]),
+                     asleepCount: night.readings(data[keyPath: key], asleepOnly: true).count)
+                }.filter { $0.asleepCount > 0 }.sorted {
+                    if ($0.index == candidate.recorder) != ($1.index == candidate.recorder) {
+                        return $0.index == candidate.recorder
+                    }
+                    if $0.asleepCount != $1.asleepCount { return $0.asleepCount > $1.asleepCount }
+                    return $0.index < $1.index
+                }
+                // Keep a single recorder's trace, rather than averaging duplicate device readings.
+                return options.first?.points ?? direct
+            }
+            result.heartRate += readings(\.heartRate)
+            result.respiratoryRate += readings(\.respiratoryRate)
+        }
+        return result
+    }
+
     /// Resolve overlaps within ONE source. Detailed stages replace generic asleep summaries;
     /// duplicate records never inflate totals. Missing intervals remain gaps, not inferred sleep.
     static func normalized(_ input: [SleepSegment]) -> [SleepSegment] {

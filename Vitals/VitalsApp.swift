@@ -59,7 +59,6 @@ import SwiftUI
         #if DEBUG
         testing = ProcessInfo.processInfo.arguments.contains("-ui-testing")
         if testing {
-            UserDefaults.standard.set("helio", forKey: "sleep-source")
             UserDefaults.standard.set(false, forKey: "sleep-health-requested")
         }
         #else

@@ -11,7 +11,7 @@ struct RootView: View {
     @Environment(SessionCoordinator.self) private var coordinator
     @Environment(AppLaunch.self) private var launch
     @Environment(HelioSleepSync.self) private var helio
-    @AppStorage("sleep-source") private var sleepSource = "helio"
+    @State private var sleepHealth = SleepHealthStore()
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab: AppTab = .train
     @State private var keyboardVisible = false
@@ -42,6 +42,7 @@ struct RootView: View {
             }
         }
         .environment(\.keyboardVisible, keyboardVisible)
+        .environment(sleepHealth)
         .background(VitalsStyle.canvas)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             keyboardVisible = true
@@ -53,11 +54,11 @@ struct RootView: View {
             if phase != .active { coordinator.heartbeat() }
             if phase == .active {
                 coordinator.refreshHealthAccess(); launch.sync?.schedule(immediate: true)
-                if sleepSource == "helio" { helio.sync() }
+                helio.sync()
             }
         }
         .task {
-            if sleepSource == "helio" { helio.sync() }
+            helio.sync()
             // A heartbeat lets an interrupted session be finished at the time vitals last ran, not at relaunch.
             while !Task.isCancelled {
                 coordinator.heartbeat()

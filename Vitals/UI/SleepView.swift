@@ -5,77 +5,57 @@ struct SleepTab: View {
     let active: Bool
     @Environment(\.scenePhase) private var scenePhase
     @Environment(HelioSleepSync.self) private var helio
-    @AppStorage("sleep-source") private var source = "helio"
     @AppStorage("sleep-health-requested") private var requested = false
-    @State private var health = SleepHealthStore()
+    @Environment(SleepHealthStore.self) private var health
     @State private var date = Calendar.current.startOfDay(for: Date.now)
     @State private var selectedTime: Date?
-    @State private var connecting = false
-    @State private var showingSetup = false
-
-    private var direct: Bool { source == "helio" }
-    private var nights: [SleepNight] { direct ? helio.archive.nights(endingOn: date) : health.nights }
-    private var heartRate: [SleepReading] { direct ? helio.archive.heartRate : health.heartRate }
-    private var respiratoryRate: [SleepReading] { direct ? helio.archive.respiratoryRate : health.respiratoryRate }
-    private var loading: Bool { !direct && health.loading }
-
-    private var night: SleepNight? { nights.first { Calendar.current.isDate($0.day, inSameDayAs: date) } }
-    private var week: [SleepNight] {
-        let start = Calendar.current.date(byAdding: .day, value: -6, to: date)!
-        return nights.filter { $0.day >= start && $0.day <= date }
+    private var measurements: SleepMeasurements {
+        SleepSummary.combined(
+            helio: SleepMeasurements(nights: helio.archive.nights(endingOn: date),
+                                     heartRate: helio.archive.heartRate, respiratoryRate: helio.archive.respiratoryRate),
+            health: health.records
+        )
     }
 
     var body: some View {
+        let data = measurements
+        let night = data.nights.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    Picker("sleep source", selection: $source) {
-                        Text("Helio Strap").tag("helio")
-                        Text("Apple Health").tag("health")
-                    }
-                    .pickerStyle(.segmented)
-                    .accessibilityIdentifier("sleep-source")
-                    .onChange(of: source) { _, _ in selectedTime = nil; Task { await reload() } }
                     datePicker
-                    if direct { strapConnection }
-                    if !direct && !requested {
-                        connection
-                    } else {
-                        if !direct && health.sources.count > 1 {
-                            Picker("sleep source", selection: $health.selectedSource) {
-                                ForEach(health.sources) { Text($0.name).tag($0.id) }
-                            }
-                            .tint(VitalsStyle.accent)
-                            .onChange(of: health.selectedSource) { old, _ in
-                                if !old.isEmpty && !health.loading { Task { await reload() } }
-                            }
+                    if helio.busy {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                         }
-                        if loading {
-                            ProgressView("reading Apple Health…").frame(maxWidth: .infinity)
-                        } else if let night {
-                            nightSummary(night)
-                            stageChart(night)
-                            SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
-                                          night: night, values: heartRate, source: direct ? "Helio Strap" : health.heartSource)
-                            SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
-                                          night: night, values: respiratoryRate, source: direct ? "Helio Strap" : health.respiratorySource)
-                        } else {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Label("no sleep measurements for this date", systemImage: "moon.zzz").font(VitalsStyle.heading)
-                                Text(direct ? (helio.hasKey ? "sync your strap or check another date." : "connect your strap to see recorded sleep, heart rate and breathing rate.") : "check another date, or allow Motion to read sleep in Apple Health. your recorder must share measurements with Health first.")
-                                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                                TextAction("refresh measurements") { Task { await reload(force: true) } }
-                                    .disabled(direct && (!helio.hasKey || helio.busy))
-                            }
-                            .accessibilityIdentifier("sleep-empty")
-                        }
-                        if !direct, let message = health.message {
-                            Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
-                        }
-                        if !week.isEmpty && !loading { weeklyCharts }
-                        Text(direct ? "from Helio Strap · stays on this iPhone" : "from Apple Health · stays on this iPhone")
-                            .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                     }
+                    if let night {
+                        nightSummary(night)
+                        stageChart(night)
+                        SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
+                                      night: night, values: data.heartRate)
+                        SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
+                                      night: night, values: data.respiratoryRate)
+                    } else if health.loading {
+                        ProgressView("loading sleep…").frame(maxWidth: .infinity)
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Label("no sleep measurements for this date", systemImage: "moon.zzz").font(VitalsStyle.heading)
+                            Text(!helio.hasKey && !requested
+                                 ? "set up your strap or Apple Health in settings."
+                                 : "check another date, or pull down to sync.")
+                                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                        }
+                        .accessibilityIdentifier("sleep-empty")
+                    }
+                    if let message = helio.message {
+                        Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                    }
+                    if let message = health.message {
+                        Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                    }
+                    if !data.nights.isEmpty { weeklyCharts(data) }
                 }
                 .padding(VitalsStyle.gutter)
             }
@@ -85,21 +65,20 @@ struct SleepTab: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     InfoButton(title: "sleep & breathing", paragraphs: [
-                        "Helio Strap sync reads recorded sleep stages, overnight heart rate and breathing rate over Bluetooth. set it up once with your band key, then open Motion to sync.",
+                        "set up your Helio Strap and optional Apple Health access in settings. pull down here to sync.",
+                        "Helio is preferred for each night’s sleep, heart rate and breathing rate. Apple Health fills missing nights or metrics. each night uses one sleep recording, so overlapping records aren’t counted twice.",
                         "keep the strap nearby and close Zepp if it holds the Bluetooth connection. Motion leaves recordings on the band and stores its copy on this iPhone.",
-                        "Apple Health is an optional source for measurements shared by other sleep recorders. it isn’t required for direct strap sync.",
                         "breathing rate is breaths per minute, not a breath-by-breath waveform. Motion doesn’t estimate hypopnea, diagnose breathing problems, or reproduce Zepp’s sleep scores.",
-                        "shows the longest sleep period ending on each date. missing measurements stay blank. sleep totals exclude awake time. nightly averages use samples recorded during measured sleep. choose one sleep source to avoid counting overlapping recordings twice."
+                        "shows the longest sleep period ending on each date. missing measurements stay blank. sleep totals exclude awake time. nightly averages use samples recorded during measured sleep."
                     ])
                 }.quietBackground()
             }
         }
         .task(id: date) {
             selectedTime = nil
-            if health.usesTestMeasurements { requested = true; source = "health" }
+            if health.usesTestMeasurements { requested = true }
             if active { await reload() }
         }
-        .sheet(isPresented: $showingSetup) { HelioSetupView() }
         .onChange(of: active) { _, visible in if visible { Task { await reload() } } }
         .onChange(of: scenePhase) { _, phase in if phase == .active && active { Task { await reload() } } }
     }
@@ -117,40 +96,6 @@ struct SleepTab: View {
         }
     }
 
-    private var strapConnection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                if helio.busy { ProgressView() }
-                Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                Spacer()
-                TextAction(helio.hasKey ? "strap setup" : "connect strap") { showingSetup = true }
-                    .accessibilityIdentifier("helio-setup")
-            }
-            if let message = helio.message {
-                Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
-            } else if let synced = helio.archive.lastSync {
-                Text("last synced \(synced.formatted(date: .abbreviated, time: .shortened))")
-                    .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-            }
-        }
-    }
-
-    private var connection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: "moon.stars.fill").font(.system(size: 42)).foregroundStyle(SleepStage.deep.tint)
-            Text("your night, in motion").font(VitalsStyle.clock)
-            Text("see your sleep stages, overnight heart rate and breathing rate together, with a week of trends.")
-            Text("connect Apple Health to read measurements from your sleep recorder. availability depends on what it shares with Health.")
-                .foregroundStyle(VitalsStyle.secondary)
-            Button(connecting ? "connecting…" : "connect Apple Health") { Task { await connect() } }
-                .vitalsPrimaryAction().disabled(connecting || !health.available)
-                .accessibilityIdentifier("sleep-connect")
-            if !health.available { Text("Apple Health isn’t available on this device.") }
-            if let message = health.message { Text(message).foregroundStyle(VitalsStyle.caution) }
-        }
-        .accessibilityIdentifier("sleep-connect-intro")
-    }
-
     private func nightSummary(_ night: SleepNight) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
@@ -164,9 +109,6 @@ struct SleepTab: View {
             }
             Text("\(night.start.formatted(date: .omitted, time: .shortened)) – \(night.end.formatted(date: .omitted, time: .shortened))")
                 .font(VitalsStyle.heading)
-            if !direct, let source = health.sources.first(where: { $0.id == health.selectedSource }) {
-                Text(source.name).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-            }
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 16) {
                 ForEach([SleepStage.deep, .rem, .core, .awake], id: \.self) { stage in
                     VStack(alignment: .leading, spacing: 4) {
@@ -216,8 +158,10 @@ struct SleepTab: View {
         }.sleepCard()
     }
 
-    private var weeklyCharts: some View {
-        VStack(alignment: .leading, spacing: 20) {
+    private func weeklyCharts(_ data: SleepMeasurements) -> some View {
+        let start = Calendar.current.date(byAdding: .day, value: -6, to: date)!
+        let week = data.nights.filter { $0.day >= start && $0.day <= date }
+        return VStack(alignment: .leading, spacing: 20) {
             SectionHeading(title: "last 7 days", detail: "ending \(date.formatted(.dateTime.month(.abbreviated).day()))")
             VStack(alignment: .leading, spacing: 12) {
                 Text("time asleep").font(VitalsStyle.heading)
@@ -255,12 +199,12 @@ struct SleepTab: View {
                     }
                 }.frame(height: 160)
             }.sleepCard()
-            weeklyRate("sleep heart rate", values: heartRate, unit: "bpm", color: VitalsStyle.heart)
-            weeklyRate("breathing rate", values: respiratoryRate, unit: "breaths/min", color: .cyan)
+            weeklyRate("sleep heart rate", week: week, values: data.heartRate, unit: "bpm", color: VitalsStyle.heart)
+            weeklyRate("breathing rate", week: week, values: data.respiratoryRate, unit: "breaths/min", color: .cyan)
         }
     }
 
-    private func weeklyRate(_ title: String, values: [SleepReading], unit: String, color: Color) -> some View {
+    private func weeklyRate(_ title: String, week: [SleepNight], values: [SleepReading], unit: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title).font(VitalsStyle.heading)
             if week.contains(where: { $0.average(values) != nil }) {
@@ -291,14 +235,10 @@ struct SleepTab: View {
 
     private func changeDay(_ amount: Int) { date = Calendar.current.date(byAdding: .day, value: amount, to: date)! }
     private func reload(force: Bool = false) async {
-        if direct { helio.sync(force: force) }
-        else if requested { await health.load(endingOn: date) }
+        helio.sync(force: force)
+        if requested { await health.load(endingOn: date) }
     }
-    private func connect() async {
-        connecting = true
-        defer { connecting = false }
-        if await health.connect() { requested = true; await reload() }
-    }
+
 }
 
 private struct SleepRateCard: View {
@@ -307,7 +247,6 @@ private struct SleepRateCard: View {
     let color: Color
     let night: SleepNight
     let values: [SleepReading]
-    let source: String?
     @State private var selectedTime: Date?
 
     var body: some View {
@@ -339,7 +278,6 @@ private struct SleepRateCard: View {
                     Text("\(point.date.formatted(date: .omitted, time: .shortened)) · \(point.value.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")
                         .font(VitalsStyle.caption)
                 }
-                if let source { Text(source).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary) }
             }
         }.sleepCard()
     }

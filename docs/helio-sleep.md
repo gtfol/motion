@@ -1,11 +1,12 @@
 # Direct Helio sleep sync
 
 Motion reads the Helio Strap's stored history over Bluetooth. Zepp's cloud API and
-Apple Health are not in this path. Apple Health is still an optional Sleep source.
+Apple Health are not in this path. The single Sleep view prefers Helio data, with
+optional Apple Health access filling missing nights or metrics.
 
 ## Setup
 
-1. Open Sleep, choose **Helio Strap**, then **connect strap**.
+1. Open Settings → **strap** → **connect strap** (or **sleep sync** for an already selected Helio).
 2. Choose the same Helio Strap already paired with Zepp. Do not reset or unpair it.
 3. Retrieve its existing 32-hex-character authentication key using the
    [Gadgetbridge pairing guide](https://gadgetbridge.org/basics/pairing/huami-xiaomi-server/).
@@ -15,6 +16,17 @@ Apple Health are not in this path. Apple Health is still an optional Sleep sourc
    and choose **save & sync**. Never paste the key into issues, chat or logs.
 5. Open Motion to sync, or pull down in Sleep to retry. Foreground automatic attempts
    are throttled to fifteen minutes; manual retries are immediate.
+
+Optional fallback: in Settings → Apple Health, choose **connect sleep data**.
+No source picker is needed. A Helio sleep record wins for its wake date; otherwise
+Motion selects one Health recording, preferring stages and then sleep coverage.
+Overlapping recordings, including duplicates assigned to neighboring dates, are not
+added together. Stages from different recorders are never spliced into one night.
+For each night's heart rate and breathing rate separately, Helio wins if it has
+usable asleep readings; otherwise Health supplies that metric. Health readings can
+fill a Helio night even when Health has no sleep-stage record. Each metric keeps
+one recorder's trace, preferring the selected Health sleep recorder when available.
+Missing readings remain blank. Pull-to-refresh reloads both available sources.
 
 The key is scoped to the Motion account and strap, stored using
 `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, and never displayed again.

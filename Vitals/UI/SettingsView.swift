@@ -4,7 +4,13 @@ import UIKit
 struct SettingsTab: View {
     @Environment(SessionCoordinator.self) private var coordinator
     @Environment(HeartRateMonitor.self) private var monitor
+    @Environment(HelioSleepSync.self) private var helio
+    @Environment(SleepHealthStore.self) private var sleepHealth
+    @AppStorage("sleep-health-requested") private var sleepHealthRequested = false
     @State private var choosingStrap = false
+    @State private var showingSleepSetup = false
+    @State private var connectingSleepHealth = false
+    @State private var sleepHealthMessage: String?
     @State private var ageText = ""
     @FocusState private var ageFocused: Bool
 
@@ -27,6 +33,7 @@ struct SettingsTab: View {
             .vitalsScreen()
             .vitalsTitle("settings")
             .sheet(isPresented: $choosingStrap) { StrapChooser() }
+            .sheet(isPresented: $showingSleepSetup) { HelioSetupView() }
             .onAppear { ageText = coordinator.age.map { "\($0)" } ?? "" }
         }
     }
@@ -99,11 +106,12 @@ struct SettingsTab: View {
     private var strap: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
-                Text("heart rate strap").font(VitalsStyle.heading)
-                InfoButton(title: "heart rate strap", paragraphs: [
+                Text("strap").font(VitalsStyle.heading)
+                InfoButton(title: "strap", paragraphs: [
                     "in Zepp: Device → Helio Strap → Health Monitoring → turn on Heart Rate Push. then fully quit Zepp while training, because it can hold the strap’s connection.",
                     "motion reads the standard Bluetooth heart rate and battery services, and only connects to the strap you choose. Zepp doesn’t need to be open.",
-                    "with the screen locked, ios usually keeps delivering heart rate. if ios ends motion, or you force-quit it, nothing is recorded until you open motion again; that time shows as a gap."
+                    "with the screen locked, ios usually keeps delivering heart rate. if ios ends motion, or you force-quit it, nothing is recorded until you open motion again; that time shows as a gap.",
+                    "Helio sleep sync uses your existing band key to read sleep, overnight heart rate and breathing directly. Helio is preferred; Apple Health fills missing nights and metrics."
                 ])
                 Spacer()
             }
@@ -125,8 +133,13 @@ struct SettingsTab: View {
                     TextAction("choose another") { choosingStrap = true }
                     TextAction("forget", role: .destructive, secondary: true) { monitor.forget() }
                 }
+                if helio.supported {
+                    TextAction("sleep sync") { showingSleepSetup = true }
+                        .accessibilityIdentifier("helio-setup")
+                }
             } else {
-                TextAction("choose strap") { choosingStrap = true }
+                TextAction("connect strap") { showingSleepSetup = true }
+                    .accessibilityIdentifier("helio-setup")
             }
             if monitor.status == .bluetoothDenied { OpenSettingsLink() }
         }
@@ -139,7 +152,7 @@ struct SettingsTab: View {
                 InfoButton(title: "Apple Health", paragraphs: [
                     "each finished workout is saved to Apple Health once, with its type, start and end, and the heart-rate samples motion received. sets and reps stay in motion.",
                     "motion doesn’t write calories and doesn’t promise activity-ring credit.",
-                    "motion reads workouts to prevent duplicate saves. connecting the sleep tab separately reads sleep, heart rate and breathing measurements on this iPhone.",
+                    "motion reads workouts to prevent duplicate saves. sleep access reads sleep, heart rate and breathing measurements to fill gaps when Helio data is missing.",
                     "without Apple Health access, everything still works in motion. cloud sync is a separate choice."
                 ])
                 Spacer()
@@ -153,6 +166,21 @@ struct SettingsTab: View {
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             case .allowed, .unavailable:
                 EmptyView()
+            }
+            TextAction(connectingSleepHealth ? "connecting…" : sleepHealthRequested ? "sleep access" : "connect sleep data") {
+                Task {
+                    connectingSleepHealth = true
+                    if await sleepHealth.connect() {
+                        sleepHealthRequested = true
+                        sleepHealthMessage = nil
+                    } else { sleepHealthMessage = sleepHealth.message }
+                    connectingSleepHealth = false
+                }
+            }
+            .disabled(connectingSleepHealth || !sleepHealth.available)
+            .accessibilityIdentifier("sleep-health-connect")
+            if let sleepHealthMessage {
+                Text(sleepHealthMessage).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
             }
         }
     }
