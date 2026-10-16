@@ -1,0 +1,983 @@
+// !$*UTF8*$!
+{
+	archiveVersion = "1";
+	classes = {
+	};
+	objectVersion = "56";
+	objects = {
+		D1F9566A85A40A086C86CBDC = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Clock.swift";
+			path = "Vitals/Core/Clock.swift";
+			sourceTree = "<group>";
+		};
+		84A6DC2954C92687677FF193 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HeartRate.swift";
+			path = "Vitals/Core/HeartRate.swift";
+			sourceTree = "<group>";
+		};
+		7428FE1EA9789B844918C806 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Session.swift";
+			path = "Vitals/Core/Session.swift";
+			sourceTree = "<group>";
+		};
+		83AAE8B519AE48F06C1CEA91 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SleepSummary.swift";
+			path = "Vitals/Core/SleepSummary.swift";
+			sourceTree = "<group>";
+		};
+		AA1B337D0696BC8D35F79098 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Sync.swift";
+			path = "Vitals/Core/Sync.swift";
+			sourceTree = "<group>";
+		};
+		CBEB51361297871774CE4FA3 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SyncDocuments.swift";
+			path = "Vitals/Core/SyncDocuments.swift";
+			sourceTree = "<group>";
+		};
+		5AC0547978FE82DD04FF9197 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Training.swift";
+			path = "Vitals/Core/Training.swift";
+			sourceTree = "<group>";
+		};
+		F85D15016A3D6790BEEC8F85 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Units.swift";
+			path = "Vitals/Core/Units.swift";
+			sourceTree = "<group>";
+		};
+		B7AFC71D946B6CC367A679D3 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Models.swift";
+			path = "Vitals/Persistence/Models.swift";
+			sourceTree = "<group>";
+		};
+		8DD9AC5AC3F155512B57BEE2 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SyncStore.swift";
+			path = "Vitals/Persistence/SyncStore.swift";
+			sourceTree = "<group>";
+		};
+		721D269BD0CD1C99CC11AC8A = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "WorkoutStore.swift";
+			path = "Vitals/Persistence/WorkoutStore.swift";
+			sourceTree = "<group>";
+		};
+		9756C6AC54DD52417CFCBE83 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "CloudSync.swift";
+			path = "Vitals/Services/CloudSync.swift";
+			sourceTree = "<group>";
+		};
+		50817583CB7019DD5B03D08E = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HealthExporter.swift";
+			path = "Vitals/Services/HealthExporter.swift";
+			sourceTree = "<group>";
+		};
+		B3E4A75D742BAC96AB8F6AB5 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HeartRateMonitor.swift";
+			path = "Vitals/Services/HeartRateMonitor.swift";
+			sourceTree = "<group>";
+		};
+		9F4716C9855E04225AF18607 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HelioSleepArchive.swift";
+			path = "Vitals/Services/HelioSleepArchive.swift";
+			sourceTree = "<group>";
+		};
+		7233DDC55881159B2CA7C7EA = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HelioSleepSync.swift";
+			path = "Vitals/Services/HelioSleepSync.swift";
+			sourceTree = "<group>";
+		};
+		BC7A69AA78E5487860EFE725 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "MotionAuthentication.swift";
+			path = "Vitals/Services/MotionAuthentication.swift";
+			sourceTree = "<group>";
+		};
+		C870BC4078F97F3D8AB6AE60 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "MotionCloud.swift";
+			path = "Vitals/Services/MotionCloud.swift";
+			sourceTree = "<group>";
+		};
+		998571A9C5C288FFB1B8E147 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SessionCoordinator.swift";
+			path = "Vitals/Services/SessionCoordinator.swift";
+			sourceTree = "<group>";
+		};
+		DCDA2E5F223A0FAAAB2FCC68 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SleepHealthStore.swift";
+			path = "Vitals/Services/SleepHealthStore.swift";
+			sourceTree = "<group>";
+		};
+		84047CFC0F286620942AE916 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "AccountSettings.swift";
+			path = "Vitals/UI/AccountSettings.swift";
+			sourceTree = "<group>";
+		};
+		EA2FF2E627B2486152ECB557 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "ActiveSessionView.swift";
+			path = "Vitals/UI/ActiveSessionView.swift";
+			sourceTree = "<group>";
+		};
+		79BD92226E7523E858D5E8C5 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "ExercisePicker.swift";
+			path = "Vitals/UI/ExercisePicker.swift";
+			sourceTree = "<group>";
+		};
+		F25E8FC2B98B3CFC6437E463 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "FinishView.swift";
+			path = "Vitals/UI/FinishView.swift";
+			sourceTree = "<group>";
+		};
+		5F76553F02772CE7D7EE7854 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HeartRateViews.swift";
+			path = "Vitals/UI/HeartRateViews.swift";
+			sourceTree = "<group>";
+		};
+		596DA987CD144BEFF34A1E7E = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HelioSetupView.swift";
+			path = "Vitals/UI/HelioSetupView.swift";
+			sourceTree = "<group>";
+		};
+		9C35616C226647A9C0A3B512 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HistoryView.swift";
+			path = "Vitals/UI/HistoryView.swift";
+			sourceTree = "<group>";
+		};
+		C66E6B097C7675C16F7C2A00 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "RootView.swift";
+			path = "Vitals/UI/RootView.swift";
+			sourceTree = "<group>";
+		};
+		43BE64B7ACB2B46BE3AC6A0A = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "RoutinesView.swift";
+			path = "Vitals/UI/RoutinesView.swift";
+			sourceTree = "<group>";
+		};
+		B409EFA23E43CFE648624480 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SetTable.swift";
+			path = "Vitals/UI/SetTable.swift";
+			sourceTree = "<group>";
+		};
+		991AAAADDACBDB94714BA9C6 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SettingsView.swift";
+			path = "Vitals/UI/SettingsView.swift";
+			sourceTree = "<group>";
+		};
+		14F0EF21FC42EBA7633DCC6D = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SleepView.swift";
+			path = "Vitals/UI/SleepView.swift";
+			sourceTree = "<group>";
+		};
+		80D143540042BE06B20E08EC = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "Style.swift";
+			path = "Vitals/UI/Style.swift";
+			sourceTree = "<group>";
+		};
+		F1B3F974A6EC05614851ED3B = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "TrainView.swift";
+			path = "Vitals/UI/TrainView.swift";
+			sourceTree = "<group>";
+		};
+		D55B00E08C9695FA1C729637 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "VitalsApp.swift";
+			path = "Vitals/VitalsApp.swift";
+			sourceTree = "<group>";
+		};
+		EB335549E09D12F9EDDE24F3 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "CoordinatorTests.swift";
+			path = "VitalsTests/CoordinatorTests.swift";
+			sourceTree = "<group>";
+		};
+		0A11DB3DD8B965B96BE2CE08 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "CoreTests.swift";
+			path = "VitalsTests/CoreTests.swift";
+			sourceTree = "<group>";
+		};
+		C98F3238EA856290F9CFB1BF = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "HelioSleepTests.swift";
+			path = "VitalsTests/HelioSleepTests.swift";
+			sourceTree = "<group>";
+		};
+		99DDBE55F16CE137108905C6 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "MotionAuthenticationTests.swift";
+			path = "VitalsTests/MotionAuthenticationTests.swift";
+			sourceTree = "<group>";
+		};
+		2BC0627DF74E69978CC01F61 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "PersistenceTests.swift";
+			path = "VitalsTests/PersistenceTests.swift";
+			sourceTree = "<group>";
+		};
+		B6CAAE9B1BD3F2DDDA004717 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SleepHealthAccessTests.swift";
+			path = "VitalsTests/SleepHealthAccessTests.swift";
+			sourceTree = "<group>";
+		};
+		6BEEABD71B640A066B000879 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SleepTests.swift";
+			path = "VitalsTests/SleepTests.swift";
+			sourceTree = "<group>";
+		};
+		326B3BB421651A5894F89E2F = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SyncPersistenceTests.swift";
+			path = "VitalsTests/SyncPersistenceTests.swift";
+			sourceTree = "<group>";
+		};
+		4490B341824225C9169B99D1 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "SyncTests.swift";
+			path = "VitalsTests/SyncTests.swift";
+			sourceTree = "<group>";
+		};
+		C0EA7E3C3433003463D0D1B2 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			name = "WorkoutFlowUITests.swift";
+			path = "VitalsUITests/WorkoutFlowUITests.swift";
+			sourceTree = "<group>";
+		};
+		C0BEFA4AD6B30A160ADA2AB3 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "folder.assetcatalog";
+			name = "Assets.xcassets";
+			path = "Vitals/Assets.xcassets";
+			sourceTree = "<group>";
+		};
+		AC41F105F744178CE359F028 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "text.plist.xml";
+			name = "Info.plist";
+			path = "Vitals/Info.plist";
+			sourceTree = "<group>";
+		};
+		8B91A38374AA918B0351AAD5 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "text.plist.entitlements";
+			name = "Vitals.entitlements";
+			path = "Vitals/Vitals.entitlements";
+			sourceTree = "<group>";
+		};
+		DA362198AF82D59FE25A42B1 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "file";
+			name = "HelioProtocol-LICENSE.txt";
+			path = "Vitals/Resources/HelioProtocol-LICENSE.txt";
+			sourceTree = "<group>";
+		};
+		49EB48D8176CF010DEC25F20 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "file";
+			name = "Lato-OFL.txt";
+			path = "Vitals/Resources/Lato-OFL.txt";
+			sourceTree = "<group>";
+		};
+		BB1BF1B16D7E04952C89CC5A = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "file";
+			name = "Lato-Regular.ttf";
+			path = "Vitals/Resources/Lato-Regular.ttf";
+			sourceTree = "<group>";
+		};
+		670BB9FCC778AAA9A1AE005B = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "file";
+			name = "PrivacyInfo.xcprivacy";
+			path = "Vitals/Resources/PrivacyInfo.xcprivacy";
+			sourceTree = "<group>";
+		};
+		681C948D238C526E9E3424E0 = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.application";
+			path = "Vitals.app";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		F739566ED5280322FF98A798 = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.cfbundle";
+			path = "VitalsTests.xctest";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		6BA62E3CF61E8FF4BB115ED8 = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.cfbundle";
+			path = "VitalsUITests.xctest";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		0A3E27B8CA818264D75C8D81 = {
+			isa = "PBXGroup";
+			children = ("681C948D238C526E9E3424E0", "F739566ED5280322FF98A798", "6BA62E3CF61E8FF4BB115ED8",);
+			name = "Products";
+			sourceTree = "<group>";
+		};
+		E78C0A7C0697955B9CA0955C = {
+			isa = "PBXGroup";
+			children = ("D1F9566A85A40A086C86CBDC", "84A6DC2954C92687677FF193", "7428FE1EA9789B844918C806", "83AAE8B519AE48F06C1CEA91", "AA1B337D0696BC8D35F79098", "CBEB51361297871774CE4FA3", "5AC0547978FE82DD04FF9197", "F85D15016A3D6790BEEC8F85",);
+			name = "Core";
+			sourceTree = "<group>";
+		};
+		195BD9DA5417F46C3D19DF72 = {
+			isa = "PBXGroup";
+			children = ("B7AFC71D946B6CC367A679D3", "8DD9AC5AC3F155512B57BEE2", "721D269BD0CD1C99CC11AC8A",);
+			name = "Persistence";
+			sourceTree = "<group>";
+		};
+		382A7E9740638CA2C0DB9C07 = {
+			isa = "PBXGroup";
+			children = ("9756C6AC54DD52417CFCBE83", "50817583CB7019DD5B03D08E", "B3E4A75D742BAC96AB8F6AB5", "9F4716C9855E04225AF18607", "7233DDC55881159B2CA7C7EA", "BC7A69AA78E5487860EFE725", "C870BC4078F97F3D8AB6AE60", "998571A9C5C288FFB1B8E147", "DCDA2E5F223A0FAAAB2FCC68",);
+			name = "Services";
+			sourceTree = "<group>";
+		};
+		B579A11EE7474DD34B8A06E4 = {
+			isa = "PBXGroup";
+			children = ("84047CFC0F286620942AE916", "EA2FF2E627B2486152ECB557", "79BD92226E7523E858D5E8C5", "F25E8FC2B98B3CFC6437E463", "5F76553F02772CE7D7EE7854", "596DA987CD144BEFF34A1E7E", "9C35616C226647A9C0A3B512", "C66E6B097C7675C16F7C2A00", "43BE64B7ACB2B46BE3AC6A0A", "B409EFA23E43CFE648624480", "991AAAADDACBDB94714BA9C6", "14F0EF21FC42EBA7633DCC6D", "80D143540042BE06B20E08EC", "F1B3F974A6EC05614851ED3B",);
+			name = "UI";
+			sourceTree = "<group>";
+		};
+		C3CD43B07B89B9C4C50273A3 = {
+			isa = "PBXGroup";
+			children = ("DA362198AF82D59FE25A42B1", "49EB48D8176CF010DEC25F20", "BB1BF1B16D7E04952C89CC5A", "670BB9FCC778AAA9A1AE005B",);
+			name = "Resources";
+			sourceTree = "<group>";
+		};
+		FC233BDA2344D97687F5A251 = {
+			isa = "PBXGroup";
+			children = ("D55B00E08C9695FA1C729637", "E78C0A7C0697955B9CA0955C", "195BD9DA5417F46C3D19DF72", "382A7E9740638CA2C0DB9C07", "B579A11EE7474DD34B8A06E4", "C3CD43B07B89B9C4C50273A3", "C0BEFA4AD6B30A160ADA2AB3", "AC41F105F744178CE359F028", "8B91A38374AA918B0351AAD5",);
+			name = "Vitals";
+			sourceTree = "<group>";
+		};
+		C4E2E7F217DE3642E7714F4E = {
+			isa = "PBXGroup";
+			children = ("EB335549E09D12F9EDDE24F3", "0A11DB3DD8B965B96BE2CE08", "C98F3238EA856290F9CFB1BF", "99DDBE55F16CE137108905C6", "2BC0627DF74E69978CC01F61", "B6CAAE9B1BD3F2DDDA004717", "6BEEABD71B640A066B000879", "326B3BB421651A5894F89E2F", "4490B341824225C9169B99D1",);
+			name = "VitalsTests";
+			sourceTree = "<group>";
+		};
+		3D84EB0AFB591686470E57D8 = {
+			isa = "PBXGroup";
+			children = ("C0EA7E3C3433003463D0D1B2",);
+			name = "VitalsUITests";
+			sourceTree = "<group>";
+		};
+		19F479106CE8C3BA8C106518 = {
+			isa = "PBXGroup";
+			children = ("FC233BDA2344D97687F5A251", "C4E2E7F217DE3642E7714F4E", "3D84EB0AFB591686470E57D8", "0A3E27B8CA818264D75C8D81",);
+			sourceTree = "<group>";
+		};
+		4DD7DE0A7183B312EF82BE34 = {
+			isa = "PBXBuildFile";
+			fileRef = "D1F9566A85A40A086C86CBDC";
+		};
+		C1409156F971F3EE8F0F7D07 = {
+			isa = "PBXBuildFile";
+			fileRef = "84A6DC2954C92687677FF193";
+		};
+		76C6F9AB1C040F468A823E03 = {
+			isa = "PBXBuildFile";
+			fileRef = "7428FE1EA9789B844918C806";
+		};
+		F2B59256D86105CB4E0FB1FA = {
+			isa = "PBXBuildFile";
+			fileRef = "83AAE8B519AE48F06C1CEA91";
+		};
+		7AB4802E7F1CC5862AB77331 = {
+			isa = "PBXBuildFile";
+			fileRef = "AA1B337D0696BC8D35F79098";
+		};
+		532D0F4793143D4E06CEF16B = {
+			isa = "PBXBuildFile";
+			fileRef = "CBEB51361297871774CE4FA3";
+		};
+		C995E44E87B2CA5E7597A231 = {
+			isa = "PBXBuildFile";
+			fileRef = "5AC0547978FE82DD04FF9197";
+		};
+		9A05B56C28771AC0D56398D5 = {
+			isa = "PBXBuildFile";
+			fileRef = "F85D15016A3D6790BEEC8F85";
+		};
+		381EA692D1658CF28BCD492A = {
+			isa = "PBXBuildFile";
+			fileRef = "B7AFC71D946B6CC367A679D3";
+		};
+		41C5571D7E2D22FEA697EDB9 = {
+			isa = "PBXBuildFile";
+			fileRef = "8DD9AC5AC3F155512B57BEE2";
+		};
+		3FD5421981ACA8856568A721 = {
+			isa = "PBXBuildFile";
+			fileRef = "721D269BD0CD1C99CC11AC8A";
+		};
+		8BCCA18F2827D577AED8AB1A = {
+			isa = "PBXBuildFile";
+			fileRef = "9756C6AC54DD52417CFCBE83";
+		};
+		9C253454C5FDA1628090E894 = {
+			isa = "PBXBuildFile";
+			fileRef = "50817583CB7019DD5B03D08E";
+		};
+		9A3F2088B6BDB4DF331EA9AF = {
+			isa = "PBXBuildFile";
+			fileRef = "B3E4A75D742BAC96AB8F6AB5";
+		};
+		9B8A6F06C25AFEE480AAC8F6 = {
+			isa = "PBXBuildFile";
+			fileRef = "9F4716C9855E04225AF18607";
+		};
+		4C353900DEA9231B5287E919 = {
+			isa = "PBXBuildFile";
+			fileRef = "7233DDC55881159B2CA7C7EA";
+		};
+		AD9115DFA9A82EC3AEC5B88F = {
+			isa = "PBXBuildFile";
+			fileRef = "BC7A69AA78E5487860EFE725";
+		};
+		CDA387E8FAE4E79FA7D7D470 = {
+			isa = "PBXBuildFile";
+			fileRef = "C870BC4078F97F3D8AB6AE60";
+		};
+		4E7F597453C9DDE9FF985B35 = {
+			isa = "PBXBuildFile";
+			fileRef = "998571A9C5C288FFB1B8E147";
+		};
+		D196D7E3173F6BCBA92B4C6D = {
+			isa = "PBXBuildFile";
+			fileRef = "DCDA2E5F223A0FAAAB2FCC68";
+		};
+		22B46F6C6EC789CF4DD00DB3 = {
+			isa = "PBXBuildFile";
+			fileRef = "84047CFC0F286620942AE916";
+		};
+		8F61943981547847983CC08B = {
+			isa = "PBXBuildFile";
+			fileRef = "EA2FF2E627B2486152ECB557";
+		};
+		DA1836069792F2790A0C8A02 = {
+			isa = "PBXBuildFile";
+			fileRef = "79BD92226E7523E858D5E8C5";
+		};
+		EC7EA96C2AB7586A12584E8D = {
+			isa = "PBXBuildFile";
+			fileRef = "F25E8FC2B98B3CFC6437E463";
+		};
+		6D4A81EB5A13BA6BEB3371AD = {
+			isa = "PBXBuildFile";
+			fileRef = "5F76553F02772CE7D7EE7854";
+		};
+		A5DCE91F596CB01856872690 = {
+			isa = "PBXBuildFile";
+			fileRef = "596DA987CD144BEFF34A1E7E";
+		};
+		7893FC24D2DAEAB7E23FF282 = {
+			isa = "PBXBuildFile";
+			fileRef = "9C35616C226647A9C0A3B512";
+		};
+		9468CAB5DDCF06467A8A717D = {
+			isa = "PBXBuildFile";
+			fileRef = "C66E6B097C7675C16F7C2A00";
+		};
+		8DC924F41DEE9BB4D0DC93A1 = {
+			isa = "PBXBuildFile";
+			fileRef = "43BE64B7ACB2B46BE3AC6A0A";
+		};
+		8ACD70247609AE67C310C91E = {
+			isa = "PBXBuildFile";
+			fileRef = "B409EFA23E43CFE648624480";
+		};
+		CB50457B82C0D13D30ADDC35 = {
+			isa = "PBXBuildFile";
+			fileRef = "991AAAADDACBDB94714BA9C6";
+		};
+		FD0528835D0BCEC455C2AABA = {
+			isa = "PBXBuildFile";
+			fileRef = "14F0EF21FC42EBA7633DCC6D";
+		};
+		A259A974BE085AFE772FF80E = {
+			isa = "PBXBuildFile";
+			fileRef = "80D143540042BE06B20E08EC";
+		};
+		4BDBE413CE3517B0B4546D29 = {
+			isa = "PBXBuildFile";
+			fileRef = "F1B3F974A6EC05614851ED3B";
+		};
+		AC02D71952F04B6EEAD5CB13 = {
+			isa = "PBXBuildFile";
+			fileRef = "D55B00E08C9695FA1C729637";
+		};
+		AFF87A50730392B6633ACECE = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = "2147483647";
+			files = ("4DD7DE0A7183B312EF82BE34", "C1409156F971F3EE8F0F7D07", "76C6F9AB1C040F468A823E03", "F2B59256D86105CB4E0FB1FA", "7AB4802E7F1CC5862AB77331", "532D0F4793143D4E06CEF16B", "C995E44E87B2CA5E7597A231", "9A05B56C28771AC0D56398D5", "381EA692D1658CF28BCD492A", "41C5571D7E2D22FEA697EDB9", "3FD5421981ACA8856568A721", "8BCCA18F2827D577AED8AB1A", "9C253454C5FDA1628090E894", "9A3F2088B6BDB4DF331EA9AF", "9B8A6F06C25AFEE480AAC8F6", "4C353900DEA9231B5287E919", "AD9115DFA9A82EC3AEC5B88F", "CDA387E8FAE4E79FA7D7D470", "4E7F597453C9DDE9FF985B35", "D196D7E3173F6BCBA92B4C6D", "22B46F6C6EC789CF4DD00DB3", "8F61943981547847983CC08B", "DA1836069792F2790A0C8A02", "EC7EA96C2AB7586A12584E8D", "6D4A81EB5A13BA6BEB3371AD", "A5DCE91F596CB01856872690", "7893FC24D2DAEAB7E23FF282", "9468CAB5DDCF06467A8A717D", "8DC924F41DEE9BB4D0DC93A1", "8ACD70247609AE67C310C91E", "CB50457B82C0D13D30ADDC35", "FD0528835D0BCEC455C2AABA", "A259A974BE085AFE772FF80E", "4BDBE413CE3517B0B4546D29", "AC02D71952F04B6EEAD5CB13",);
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		F66AE6A0EF5BF15C9B2F8C15 = {
+			isa = "PBXBuildFile";
+			fileRef = "EB335549E09D12F9EDDE24F3";
+		};
+		FC51892C608987CC7DE5005C = {
+			isa = "PBXBuildFile";
+			fileRef = "0A11DB3DD8B965B96BE2CE08";
+		};
+		EE6860E0188616C798F2646D = {
+			isa = "PBXBuildFile";
+			fileRef = "C98F3238EA856290F9CFB1BF";
+		};
+		B90B0687C6AE03552F5A32A9 = {
+			isa = "PBXBuildFile";
+			fileRef = "99DDBE55F16CE137108905C6";
+		};
+		8C803D572B196CB29DC286D1 = {
+			isa = "PBXBuildFile";
+			fileRef = "2BC0627DF74E69978CC01F61";
+		};
+		1BEBA90A86B1E12378D3759B = {
+			isa = "PBXBuildFile";
+			fileRef = "B6CAAE9B1BD3F2DDDA004717";
+		};
+		AF2DD3943854C08881A02EEA = {
+			isa = "PBXBuildFile";
+			fileRef = "6BEEABD71B640A066B000879";
+		};
+		761F7EE43CDB8DEC329FB81F = {
+			isa = "PBXBuildFile";
+			fileRef = "326B3BB421651A5894F89E2F";
+		};
+		D742BD36C5E901D59EC298B3 = {
+			isa = "PBXBuildFile";
+			fileRef = "4490B341824225C9169B99D1";
+		};
+		DEE94446A282611C16F7781C = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = "2147483647";
+			files = ("F66AE6A0EF5BF15C9B2F8C15", "FC51892C608987CC7DE5005C", "EE6860E0188616C798F2646D", "B90B0687C6AE03552F5A32A9", "8C803D572B196CB29DC286D1", "1BEBA90A86B1E12378D3759B", "AF2DD3943854C08881A02EEA", "761F7EE43CDB8DEC329FB81F", "D742BD36C5E901D59EC298B3",);
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		0DA72C4EC1A332A4D8B8A803 = {
+			isa = "PBXBuildFile";
+			fileRef = "C0EA7E3C3433003463D0D1B2";
+		};
+		47CE69D432E04CB4FA8A7324 = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = "2147483647";
+			files = ("0DA72C4EC1A332A4D8B8A803",);
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		492343FF1B3D81053CAD89E8 = {
+			isa = "PBXBuildFile";
+			fileRef = "C0BEFA4AD6B30A160ADA2AB3";
+		};
+		7CC1B37475AC04F39B4168A2 = {
+			isa = "PBXBuildFile";
+			fileRef = "DA362198AF82D59FE25A42B1";
+		};
+		E5C9A3F73B63D2B8433DF067 = {
+			isa = "PBXBuildFile";
+			fileRef = "49EB48D8176CF010DEC25F20";
+		};
+		5FFE2CF0FC099F54DAF37E90 = {
+			isa = "PBXBuildFile";
+			fileRef = "BB1BF1B16D7E04952C89CC5A";
+		};
+		398FCEECE37D07955D902E97 = {
+			isa = "PBXBuildFile";
+			fileRef = "670BB9FCC778AAA9A1AE005B";
+		};
+		41D311A605520FC7B8B9A980 = {
+			isa = "PBXResourcesBuildPhase";
+			buildActionMask = "2147483647";
+			files = ("492343FF1B3D81053CAD89E8", "7CC1B37475AC04F39B4168A2", "E5C9A3F73B63D2B8433DF067", "5FFE2CF0FC099F54DAF37E90", "398FCEECE37D07955D902E97",);
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		F9701321DBE1F73CB178ED70 = {
+			isa = "XCLocalSwiftPackageReference";
+			relativePath = "Packages/HelioProtocol";
+		};
+		E94C8C1B809DDE2D10EE28ED = {
+			isa = "XCSwiftPackageProductDependency";
+			productName = "ZeppKit";
+		};
+		C555A94ED63740CD49A7CF41 = {
+			isa = "XCSwiftPackageProductDependency";
+			productName = "ZeppKitTesting";
+		};
+		564A3E82798FD288888F6761 = {
+			isa = "PBXBuildFile";
+			productRef = "E94C8C1B809DDE2D10EE28ED";
+		};
+		162E164CA15239DBD57BBB45 = {
+			isa = "PBXBuildFile";
+			productRef = "C555A94ED63740CD49A7CF41";
+		};
+		7A4C2DC8FCA657188648E999 = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = "2147483647";
+			files = ("564A3E82798FD288888F6761",);
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		B10CDED79664567B030B2B4F = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = "2147483647";
+			files = ("162E164CA15239DBD57BBB45",);
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		483394092F406D60193C7956 = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = "2147483647";
+			files = ();
+			runOnlyForDeploymentPostprocessing = "0";
+		};
+		73EBF6644258C120893E685D = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				LM_SKIP_METADATA_EXTRACTION = "YES";
+				CLANG_ENABLE_MODULES = "YES";
+				CLANG_ENABLE_OBJC_ARC = "YES";
+				GCC_C_LANGUAGE_STANDARD = "gnu17";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				SDKROOT = "iphoneos";
+				SWIFT_VERSION = "6.0";
+				SWIFT_STRICT_CONCURRENCY = "complete";
+				ENABLE_USER_SCRIPT_SANDBOXING = "YES";
+				GCC_WARN_ABOUT_RETURN_TYPE = "YES_ERROR";
+				GCC_WARN_UNINITIALIZED_AUTOS = "YES_AGGRESSIVE";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = "YES";
+				CLANG_WARN_UNREACHABLE_CODE = "YES";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = "YES";
+				VITALS_BUNDLE_IDENTIFIER = "dev.gtfol.vitals";
+				DEBUG_INFORMATION_FORMAT = "dwarf";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ONLY_ACTIVE_ARCH = "YES";
+				ENABLE_TESTABILITY = "YES";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+			};
+			name = "Debug";
+		};
+		0B0C687DF8B6B8DC790B519C = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				LM_SKIP_METADATA_EXTRACTION = "YES";
+				CLANG_ENABLE_MODULES = "YES";
+				CLANG_ENABLE_OBJC_ARC = "YES";
+				GCC_C_LANGUAGE_STANDARD = "gnu17";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				IPHONEOS_DEPLOYMENT_TARGET = "17.0";
+				SDKROOT = "iphoneos";
+				SWIFT_VERSION = "6.0";
+				SWIFT_STRICT_CONCURRENCY = "complete";
+				ENABLE_USER_SCRIPT_SANDBOXING = "YES";
+				GCC_WARN_ABOUT_RETURN_TYPE = "YES_ERROR";
+				GCC_WARN_UNINITIALIZED_AUTOS = "YES_AGGRESSIVE";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = "YES";
+				CLANG_WARN_UNREACHABLE_CODE = "YES";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = "YES";
+				VITALS_BUNDLE_IDENTIFIER = "dev.gtfol.vitals";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ONLY_ACTIVE_ARCH = "NO";
+				ENABLE_TESTABILITY = "NO";
+				SWIFT_COMPILATION_MODE = "wholemodule";
+			};
+			name = "Release";
+		};
+		76F8DEC3DFE0BDB465198890 = {
+			isa = "XCConfigurationList";
+			buildConfigurations = ("73EBF6644258C120893E685D", "0B0C687DF8B6B8DC790B519C",);
+			defaultConfigurationIsVisible = "0";
+			defaultConfigurationName = "Release";
+		};
+		B00CCDD09424E369308D67FA = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VITALS_BUNDLE_IDENTIFIER)";
+				TARGETED_DEVICE_FAMILY = "1";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = "NO";
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO";
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO";
+				CODE_SIGN_STYLE = "Automatic";
+				CODE_SIGN_ENTITLEMENTS = "Vitals/Vitals.entitlements";
+				INFOPLIST_FILE = "Vitals/Info.plist";
+				GENERATE_INFOPLIST_FILE = "NO";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
+				MARKETING_VERSION = "0.1";
+				CURRENT_PROJECT_VERSION = "10";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks",);
+			};
+			name = "Debug";
+		};
+		1B104479E55E37CF8A63CBDF = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VITALS_BUNDLE_IDENTIFIER)";
+				TARGETED_DEVICE_FAMILY = "1";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = "NO";
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO";
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO";
+				CODE_SIGN_STYLE = "Automatic";
+				CODE_SIGN_ENTITLEMENTS = "Vitals/Vitals.entitlements";
+				INFOPLIST_FILE = "Vitals/Info.plist";
+				GENERATE_INFOPLIST_FILE = "NO";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
+				MARKETING_VERSION = "0.1";
+				CURRENT_PROJECT_VERSION = "10";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks",);
+			};
+			name = "Release";
+		};
+		06CB67C35A91E16DBD17B949 = {
+			isa = "XCConfigurationList";
+			buildConfigurations = ("B00CCDD09424E369308D67FA", "1B104479E55E37CF8A63CBDF",);
+			defaultConfigurationIsVisible = "0";
+			defaultConfigurationName = "Release";
+		};
+		22341BB87F410D35D057D37C = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VITALS_BUNDLE_IDENTIFIER).tests";
+				TARGETED_DEVICE_FAMILY = "1";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vitals.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Vitals";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+			};
+			name = "Debug";
+		};
+		A188B1844D481F2A55033242 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VITALS_BUNDLE_IDENTIFIER).tests";
+				TARGETED_DEVICE_FAMILY = "1";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vitals.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Vitals";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+			};
+			name = "Release";
+		};
+		66347432B32AAA402CD1360D = {
+			isa = "XCConfigurationList";
+			buildConfigurations = ("22341BB87F410D35D057D37C", "A188B1844D481F2A55033242",);
+			defaultConfigurationIsVisible = "0";
+			defaultConfigurationName = "Release";
+		};
+		1DB36EACD1C83F7855DB7DAB = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VITALS_BUNDLE_IDENTIFIER).uitests";
+				TARGETED_DEVICE_FAMILY = "1";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				TEST_TARGET_NAME = "Vitals";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+			};
+			name = "Debug";
+		};
+		02E38A8C02B0B3DA8FC10AD1 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(VITALS_BUNDLE_IDENTIFIER).uitests";
+				TARGETED_DEVICE_FAMILY = "1";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				CODE_SIGN_STYLE = "Automatic";
+				GENERATE_INFOPLIST_FILE = "YES";
+				TEST_TARGET_NAME = "Vitals";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+			};
+			name = "Release";
+		};
+		DFF96C39B11EA56634DA3209 = {
+			isa = "XCConfigurationList";
+			buildConfigurations = ("1DB36EACD1C83F7855DB7DAB", "02E38A8C02B0B3DA8FC10AD1",);
+			defaultConfigurationIsVisible = "0";
+			defaultConfigurationName = "Release";
+		};
+		C1E9827DB735CA9BAA54A540 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = "06CB67C35A91E16DBD17B949";
+			buildPhases = ("AFF87A50730392B6633ACECE", "7A4C2DC8FCA657188648E999", "41D311A605520FC7B8B9A980",);
+			buildRules = ();
+			dependencies = ();
+			name = "Vitals";
+			productName = "Vitals";
+			productReference = "681C948D238C526E9E3424E0";
+			packageProductDependencies = ("E94C8C1B809DDE2D10EE28ED",);
+			productType = "com.apple.product-type.application";
+		};
+		DAB01D73CBBCF1FEDE84E2D6 = {
+			isa = "PBXContainerItemProxy";
+			containerPortal = "244210E48437B6556980A702";
+			proxyType = "1";
+			remoteGlobalIDString = "C1E9827DB735CA9BAA54A540";
+			remoteInfo = "Vitals";
+		};
+		F9A94CEF8CF7D85CE881E703 = {
+			isa = "PBXTargetDependency";
+			target = "C1E9827DB735CA9BAA54A540";
+			targetProxy = "DAB01D73CBBCF1FEDE84E2D6";
+		};
+		9805CBD60EB4F66728D5D195 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = "66347432B32AAA402CD1360D";
+			buildPhases = ("DEE94446A282611C16F7781C", "B10CDED79664567B030B2B4F",);
+			buildRules = ();
+			dependencies = ("F9A94CEF8CF7D85CE881E703",);
+			name = "VitalsTests";
+			productName = "VitalsTests";
+			productReference = "F739566ED5280322FF98A798";
+			packageProductDependencies = ("C555A94ED63740CD49A7CF41",);
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		36D01909EC5682B54FA69D1E = {
+			isa = "PBXContainerItemProxy";
+			containerPortal = "244210E48437B6556980A702";
+			proxyType = "1";
+			remoteGlobalIDString = "C1E9827DB735CA9BAA54A540";
+			remoteInfo = "Vitals";
+		};
+		E93CD1B61BE68731C44F3E18 = {
+			isa = "PBXTargetDependency";
+			target = "C1E9827DB735CA9BAA54A540";
+			targetProxy = "36D01909EC5682B54FA69D1E";
+		};
+		7DFF4159D29BE2155F6C34B5 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = "DFF96C39B11EA56634DA3209";
+			buildPhases = ("47CE69D432E04CB4FA8A7324", "483394092F406D60193C7956",);
+			buildRules = ();
+			dependencies = ("E93CD1B61BE68731C44F3E18",);
+			name = "VitalsUITests";
+			productName = "VitalsUITests";
+			productReference = "6BA62E3CF61E8FF4BB115ED8";
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		244210E48437B6556980A702 = {
+			isa = "PBXProject";
+			attributes = {
+				BuildIndependentTargetsInParallel = "YES";
+				LastUpgradeCheck = "2660";
+				TargetAttributes = {
+					C1E9827DB735CA9BAA54A540 = {
+						CreatedOnToolsVersion = "26.6";
+					};
+					9805CBD60EB4F66728D5D195 = {
+						CreatedOnToolsVersion = "26.6";
+						TestTargetID = "C1E9827DB735CA9BAA54A540";
+					};
+					7DFF4159D29BE2155F6C34B5 = {
+						CreatedOnToolsVersion = "26.6";
+						TestTargetID = "C1E9827DB735CA9BAA54A540";
+					};
+				};
+			};
+			buildConfigurationList = "76F8DEC3DFE0BDB465198890";
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "en";
+			hasScannedForEncodings = "0";
+			knownRegions = ("en", "Base",);
+			mainGroup = "19F479106CE8C3BA8C106518";
+			productRefGroup = "0A3E27B8CA818264D75C8D81";
+			packageReferences = ("F9701321DBE1F73CB178ED70",);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = ("C1E9827DB735CA9BAA54A540", "9805CBD60EB4F66728D5D195", "7DFF4159D29BE2155F6C34B5",);
+		};
+	};
+	rootObject = "244210E48437B6556980A702";
+}

@@ -1,0 +1,40 @@
+name: Sync database and account tests
+on:
+  push:
+    paths: ['supabase/**', '.github/workflows/sync.yml']
+  pull_request:
+    paths: ['supabase/**', '.github/workflows/sync.yml']
+permissions:
+  contents: read
+jobs:
+  database:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: motion_test
+          POSTGRES_DB: motion_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify account isolation, retries, conflicts and deletions
+        env:
+          PGPASSWORD: motion_test
+        run: |
+          psql -h localhost -U postgres -d motion_test -v ON_ERROR_STOP=1 -f supabase/tests/bootstrap.sql
+          for migration in supabase/migrations/*.sql; do
+            psql -h localhost -U postgres -d motion_test -v ON_ERROR_STOP=1 -f "$migration"
+          done
+          psql -h localhost -U postgres -d motion_test -v ON_ERROR_STOP=1 -f supabase/tests/sync.sql
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verify account deletion authorization
+        run: deno test --allow-env supabase/functions/delete-account/index_test.ts

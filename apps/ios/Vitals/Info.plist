@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleDevelopmentRegion</key><string>$(DEVELOPMENT_LANGUAGE)</string>
+<key>CFBundleDisplayName</key><string>motion</string>
+<key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+<key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+<key>CFBundleName</key><string>motion</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+<key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+<key>MotionServerURL</key><string>https://motion.gtfol.dev</string>
+<key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>dev.gtfol.vitals</string></array></dict></array>
+<key>LSRequiresIPhoneOS</key><true/>
+<key>ITSAppUsesNonExemptEncryption</key><false/>
+<key>UIAppFonts</key><array><string>Lato-Regular.ttf</string></array>
+<key>NSBluetoothAlwaysUsageDescription</key><string>motion connects to the strap you choose to record workout heart rate and sync sleep, overnight heart rate and breathing rate.</string>
+<key>NSHealthUpdateUsageDescription</key><string>motion saves each finished workout and the heart-rate samples it received to Apple Health.</string>
+<key>NSHealthShareUsageDescription</key><string>motion reads sleep stages, heart rate and respiratory rate to show your sleep and breathing trends on this iPhone. it also reads workouts to prevent duplicate saves.</string>
+<key>UIBackgroundModes</key><array><string>bluetooth-central</string></array>
+<key>UIApplicationSceneManifest</key><dict><key>UIApplicationSupportsMultipleScenes</key><false/></dict>
+<key>UILaunchScreen</key><dict/>
+<key>UIUserInterfaceStyle</key><string>Dark</string>
+<key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
+</dict></plist>

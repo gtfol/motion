@@ -1,0 +1,1 @@
+export default function Home() {return <section><p className="eyebrow">your fitness companion</p><h1>Keep moving.</h1><p>Track your workouts and heart rate, with Amazfit Helio Strap support.</p><p className="muted">Open Motion on your iPhone to sign in and sync your training log.</p></section>;}
