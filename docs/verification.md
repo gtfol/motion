@@ -10,9 +10,10 @@ Build 10's final signed archive now includes `ed24ee3` (strap transfer recovery,
 Apple Health access and daily/weekly Sleep). Signature, version, bundle identifier
 and phone label checks pass. After Xcode signing access was restored, Apple accepted
 Motion 0.1 (10) for processing on October 16 at 00:33 PDT; export/upload succeeded.
-Internal TestFlight availability is awaiting browser confirmation because App Store
-Connect remains signed out. The older `9ec996a` archive is superseded and must not
-be uploaded. Build 10 is the latest successfully uploaded package.
+App Store Connect subsequently confirms build 0.1 (10) is **Testing** in the
+**Internal** group (one tester), with 90 days remaining. The older `9ec996a`
+archive is superseded and must not be uploaded. Build 10 is the latest available
+TestFlight package.
 
 The full [iPhone build and test job](https://github.com/gtfol/motion/actions/runs/38805496774/job/116665956429)
 passed for `ed24ee3`. Its separate Foundation-only package job accidentally included
