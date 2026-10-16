@@ -25,6 +25,10 @@ Apply `migrations/001_backend.sql` in a transaction to Motion’s database **bef
 
 No migration runs during a web request or build. Missing configuration serves an honest setup message. Redeploy after adding production variables. Preview deployments should have their own disposable database/Google callback or no authentication credentials.
 
+## Legal and contact links
+
+Motion links directly to [gtfol privacy](https://gtfol.dev/privacy) and [gtfol terms](https://gtfol.dev/terms). Use the shared privacy URL in App Store Connect as well. There is no separate Motion privacy page or redirect. Public support and contact email is `team@gtfol.dev`.
+
 ## Local verification
 
 From `apps/web`: `npm ci`, `npm run typecheck`, `npm run build`.
