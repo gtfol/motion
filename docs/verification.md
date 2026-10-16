@@ -8,16 +8,18 @@
 
 Build 10's final signed archive now includes `ed24ee3` (strap transfer recovery,
 Apple Health access and daily/weekly Sleep). Signature, version, bundle identifier
-and phone label checks pass. The October 15 14:53 PDT export still failed with a
-missing Xcode account token while the Mac was locked. After unlocking, retry the
-final archive; no build 10 upload has succeeded. The older `9ec996a` archive is
-superseded and must not be uploaded. Build 9 remains the latest uploaded package.
+and phone label checks pass. After Xcode signing access was restored, Apple accepted
+Motion 0.1 (10) for processing on October 16 at 00:33 PDT; export/upload succeeded.
+Internal TestFlight availability is awaiting browser confirmation because App Store
+Connect remains signed out. The older `9ec996a` archive is superseded and must not
+be uploaded. Build 10 is the latest successfully uploaded package.
 
 The full [iPhone build and test job](https://github.com/gtfol/motion/actions/runs/38805496774/job/116665956429)
 passed for `ed24ee3`. Its separate Foundation-only package job accidentally included
 the new app-only Health authorization test. Adding that file to the existing
 exclusion list restores the intended test targets; 50 core and 118 protocol tests
-pass locally. The four Health authorization tests remain in the passing iOS suite.
+pass locally. The corrected full [CI run](https://github.com/gtfol/motion/actions/runs/38813270463)
+also passes. The four Health authorization tests remain in the passing iOS suite.
 
 - **Strap transfer recovery (build 10):** 118 protocol tests, 82 iOS unit tests and the Settings UI check pass. New regressions cover zero-stage records alongside valid nights, later staging without erasing a saved night, malformed stage tables/times/overlaps with independent HR and breathing downloads, and actual local-write failure. Rejected rounds keep band history and saved cursors; content errors now identify the failing validation instead of claiming storage failed. The Settings action is named **strap settings**. The first incremental simulator build used a stale package interface; a fresh build and all targeted tests pass. The user's October 15 screenshot confirms authentication reached history processing; its generic error cannot establish the exact failed check, and a successful physical-band retry is still required. Build 9's full [CI run](https://github.com/gtfol/motion/actions/runs/38799306593) also passed.
 
