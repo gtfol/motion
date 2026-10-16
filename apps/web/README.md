@@ -4,7 +4,7 @@ Next.js on Vercel, Google-only Better Auth, Supabase PostgreSQL storage. This fo
 
 ## Production setup
 
-Use the existing **motion** project in Vercel’s **gtfol** team, domain **motion.gtfol.dev**. Deploy the `web` directory (or set Root Directory to `web` for a Git connection). Keep source exposure off and never add secrets to `NEXT_PUBLIC_*` variables.
+Use the existing **motion** project in Vercel’s **gtfol** team, domain **motion.gtfol.dev**. Connect `gtfol/motion`, use production branch `main`, and set Root Directory to `apps/web`, matching Capsule’s repository layout. For a manual deployment, run the CLI from `apps/web`. Keep source exposure off and never add secrets to `NEXT_PUBLIC_*` variables.
 
 `vercel.json` explicitly selects the Next.js preset so the existing project's generic preset cannot publish an empty deployment. Use Vercel CLI 47.2.2 or newer. Set `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` to the existing project IDs to deploy without a local `.vercel` link file.
 
@@ -27,7 +27,7 @@ No migration runs during a web request or build. Missing configuration serves an
 
 ## Local verification
 
-`npm ci`, `npm run typecheck`, `npm run build`.
+From `apps/web`: `npm ci`, `npm run typecheck`, `npm run build`.
 
 For database tests, create a **local disposable** PostgreSQL database ending in `_test`, with `anon` and `authenticated` roles. Set `DATABASE_URL` to that database for `npm run migrate`, then `TEST_DATABASE_URL` for `npm test`. Tests refuse non-local databases and use synthetic identities only. PostgreSQL 16+ is supported. Test secrets are never production credentials.
 

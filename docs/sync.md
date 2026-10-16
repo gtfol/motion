@@ -25,7 +25,7 @@ Pull pages are limited to 100 records and approximately 3.5 MB. The app continue
 
 ## Deployment
 
-See [`web/README.md`](../web/README.md) for the Google callback, server configuration, private-schema migration and release checklist. The Supabase Auth provider and old Edge Function configuration are historical and are not used by the new native build. Do not enable a second login path.
+See [web setup](../apps/web/README.md) for the Google callback, server configuration, private-schema migration and release checklist. The Supabase Auth provider and old Edge Function configuration are historical and are not used by the new native build. Do not enable a second login path.
 
 ## Verification
 
