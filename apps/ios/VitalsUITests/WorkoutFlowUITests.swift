@@ -74,7 +74,7 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m")
         XCTAssertLessThan(issue.frame.maxY, app.staticTexts["sleep-duration"].frame.minY)
         let explanation = "Motion couldn’t read some sleep data from your strap. try syncing again."
-        XCTAssertFalse(app.staticTexts[explanation].exists, "details appear only when requested")
+        XCTAssertFalse(app.staticTexts[explanation].isHittable, "the hidden settings page must not expose details on Sleep")
         issue.tap()
         let alert = app.alerts["sync incomplete"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
@@ -83,7 +83,7 @@ final class WorkoutFlowUITests: XCTestCase {
         capture(app, "plain sync explanation")
         alert.buttons["close"].tap()
         app.swipeUp()
-        XCTAssertFalse(app.staticTexts[explanation].exists)
+        XCTAssertFalse(app.staticTexts[explanation].isHittable)
         XCTAssertFalse(app.staticTexts["the strap returned stages outside its recorded sleep period."].exists)
         XCTAssertFalse(app.buttons["copy sync details"].exists)
         capture(app, "sleep charts without error footer")
@@ -100,12 +100,12 @@ final class WorkoutFlowUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
         app.buttons["tab-sleep"].tap()
-        XCTAssertTrue(app.otherElements["sleep-empty"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].waitForExistence(timeout: 5))
         app.buttons["sleep-sync-issue"].tap()
         XCTAssertTrue(app.alerts["sync incomplete"].waitForExistence(timeout: 5))
         app.alerts["sync incomplete"].buttons["try again"].tap()
         XCTAssertTrue(app.buttons["sleep-sync-issue"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.otherElements["sleep-empty"].firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["no sleep measurements for this date"].exists)
         XCTAssertFalse(app.staticTexts["sleep-duration"].exists)
         capture(app, "empty sleep keeps actionable sync status")
     }
