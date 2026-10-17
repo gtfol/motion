@@ -78,6 +78,13 @@ import Observation
     func sync(force: Bool = false) {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
+        if args.contains("-ui-testing"), args.contains("-ui-testing-sleep-sync-error") {
+            let issue = HelioTransferError.stageBounds(startOffset: -120, endOffset: -360, duration: 240)
+            status = "sync incomplete"
+            message = issue.message(for: .sleepSession)
+            diagnosticDetails = issue.diagnosticDetails
+            return // Synthetic failure without Bluetooth, Keychain or archive writes.
+        }
         if !force, args.contains("-ui-testing"), args.contains("-ui-testing-strap") { return }
         #endif
         // Files/Keychain can be unavailable during a Bluetooth relaunch before first unlock.

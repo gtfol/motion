@@ -78,7 +78,8 @@ that account's band keys and local history. Signing out preserves its isolated c
   stage intervals reject that record without advancing the sleep cursor.
   Motion then continues with independent heart-rate and breathing downloads. Content
   errors identify the reason separately from failures writing the local archive.
-  Long-press a sync error in Settings or Sleep to **copy sync details**. These
+  Sleep shows a compact **sync incomplete** status above the charts. Tap it for a plain-language explanation and retry; diagnostics are never printed below the charts.
+  Long-press a sync error in Settings to **copy sync details**. These
   diagnostics contain relative minute offsets only, with no key, packets, absolute
   timestamps, account identity or heart/breathing readings; nothing is uploaded.
 - Every fetch acknowledgement uses **keep on device** (`03 09`), including failures.

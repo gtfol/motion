@@ -10,6 +10,11 @@ struct SleepTab: View {
     @State private var period: SleepPeriod = .daily
     @State private var date = Calendar.current.startOfDay(for: Date.now)
     @State private var selectedTime: Date?
+    @State private var showingSyncIssue = false
+    private var syncIssue: String? {
+        let messages = [helio.message, health.message].compactMap { $0 }
+        return messages.isEmpty ? nil : messages.joined(separator: "\n\n")
+    }
     private var measurements: SleepMeasurements {
         SleepSummary.combined(
             helio: SleepMeasurements(sessions: helio.archive.sleepSessions(endingOn: date),
@@ -42,6 +47,13 @@ struct SleepTab: View {
                                 ProgressView()
                                 Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                             }
+                        } else if syncIssue != nil {
+                            Button { showingSyncIssue = true } label: {
+                                Label("sync incomplete", systemImage: "exclamationmark.circle")
+                                    .font(VitalsStyle.caption)
+                            }
+                            .foregroundStyle(VitalsStyle.secondary)
+                            .accessibilityIdentifier("sleep-sync-issue")
                         }
                         if period == .weekly, !week.isEmpty {
                             weeklyCharts(data, week: week)
@@ -65,17 +77,6 @@ struct SleepTab: View {
                             }
                             .accessibilityIdentifier("sleep-empty")
                         }
-                        if let message = helio.message {
-                            Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
-                                .contextMenu {
-                                    if let details = helio.diagnosticDetails {
-                                        Button("copy sync details") { UIPasteboard.general.string = details }
-                                    }
-                                }
-                        }
-                        if let message = health.message {
-                            Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
-                        }
                     }
                     .padding(VitalsStyle.gutter)
                 }
@@ -96,6 +97,12 @@ struct SleepTab: View {
                     ])
                 }.quietBackground()
             }
+        }
+        .alert("sync incomplete", isPresented: $showingSyncIssue) {
+            Button("try again") { Task { await reload(force: true) } }
+            Button("close", role: .cancel) {}
+        } message: {
+            Text(syncIssue ?? "try syncing again.")
         }
         .task(id: date) {
             selectedTime = nil
