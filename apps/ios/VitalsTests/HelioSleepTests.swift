@@ -142,7 +142,7 @@ final class HelioSleepTests: XCTestCase {
         retry.device.fetchData[.sleepSession] = (start, outside + napBytes())
         installReadings(retry)
         retry.run()
-        XCTAssertTrue(retry.sync.message?.contains("outside its recorded sleep period") == true)
+        XCTAssertEqual(retry.sync.message, "Motion couldn’t read some sleep data from your strap. try syncing again.")
         XCTAssertEqual(retry.sync.diagnosticDetails,
                        "sleep stage bounds; start offset: -120 min; end offset: -360 min; stage duration: 240 min")
         XCTAssertEqual(retry.sync.archive.sessions.count, 2)
@@ -195,19 +195,19 @@ final class HelioSleepTests: XCTestCase {
     @MainActor func testUnsupportedSleepPreservesNightAndCursorButStillFetchesOtherMetrics() throws {
         let directory = try directory(), baseline = rig(directory)
         installSleep(baseline); baseline.run()
-        var invalidCases: [(bytes: [UInt8], message: String)] = []
+        var invalidCases: [(bytes: [UInt8], detail: String)] = []
         var overflow = sleepBytes(); overflow[0x54] = 101
-        invalidCases.append((overflow, "sleep-stage format"))
-        invalidCases.append((sleepBytes(invalid: true), "outside its recorded sleep period"))
+        invalidCases.append((overflow, "stageFormat"))
+        invalidCases.append((sleepBytes(invalid: true), "sleep stage bounds"))
         var overlap = sleepBytes()
         overlap.replaceSubrange(0x5b..<0x5d, with: le(1439, count: 2))
-        invalidCases.append((overlap, "overlapping sleep stages"))
+        invalidCases.append((overlap, "stageOverlap"))
         var future = sleepBytes()
         future.replaceSubrange(0..<4, with: le(UInt32(Date.now.timeIntervalSince1970 + 86_400)))
-        invalidCases.append((future, "unexpected dates"))
+        invalidCases.append((future, "sleepDates"))
         var unknown = sleepBytes()
         for index in 0..<3 { unknown[0x5a + index * 5] = 0x02 }
-        invalidCases.append((unknown, "no stages Motion recognizes"))
+        invalidCases.append((unknown, "unknownStages"))
         for invalid in invalidCases {
             let broken = rig(directory)
             broken.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), invalid.bytes)
@@ -215,7 +215,8 @@ final class HelioSleepTests: XCTestCase {
             broken.run()
             XCTAssertFalse(broken.sync.busy)
             XCTAssertTrue(broken.sync.hasKey)
-            XCTAssertTrue(broken.sync.message?.contains(invalid.message) == true, broken.sync.message ?? "missing message")
+            XCTAssertEqual(broken.sync.message, "Motion couldn’t read some sleep data from your strap. try syncing again.")
+            XCTAssertTrue(broken.sync.diagnosticDetails?.contains(invalid.detail) == true, broken.sync.diagnosticDetails ?? "missing diagnostics")
             XCTAssertEqual(broken.sync.archive.sessions.flatMap(\.segments), baseline.sync.archive.sessions.flatMap(\.segments))
             XCTAssertEqual(broken.sync.archive.cursors["72"], baseline.sync.archive.cursors["72"])
             XCTAssertEqual(broken.sync.archive.lastSync, baseline.sync.archive.lastSync)

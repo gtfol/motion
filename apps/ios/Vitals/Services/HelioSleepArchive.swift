@@ -136,16 +136,13 @@ enum HelioTransferError: Error {
 
     func message(for type: ZeppFetchType) -> String {
         switch self {
-        case .unverified: return "the strap’s transfer couldn’t be verified. pull down to retry."
-        case .stageFormat: return "Motion couldn’t read this strap’s sleep-stage format."
-        case .sleepDates: return "the strap returned a sleep record with unexpected dates."
-        case .stageBounds: return "the strap returned stages outside its recorded sleep period."
-        case .stageOverlap: return "the strap returned overlapping sleep stages."
-        case .unknownStages: return "this sleep record has no stages Motion recognizes."
+        case .unverified: return "Motion couldn’t finish downloading from your strap. try syncing again."
+        case .stageFormat, .sleepDates, .stageBounds, .stageOverlap, .unknownStages:
+            return "Motion couldn’t read some sleep data from your strap. try syncing again."
         case .readingDates:
-            let metric = type == .activity ? "heart-rate" : "breathing"
-            return "the strap returned \(metric) readings with unexpected dates."
-        case .unsupportedRecord: return "Motion couldn’t read this type of strap record."
+            let metric = type == .activity ? "heart rate" : "breathing"
+            return "Motion couldn’t read some \(metric) data from your strap. try syncing again."
+        case .unsupportedRecord: return "Motion couldn’t read some data from your strap. try syncing again."
         }
     }
 }
