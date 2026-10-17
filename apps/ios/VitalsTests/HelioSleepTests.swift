@@ -92,6 +92,73 @@ final class HelioSleepTests: XCTestCase {
         rig.device.fetchData[.sleepRespiratoryRate] = (start, le(UInt32(readingDate.timeIntervalSince1970)) + [0, 13, 0, 0])
     }
 
+    private func napBytes() -> [UInt8] {
+        var bytes = sleepBytes()
+        bytes.replaceSubrange(0..<4, with: le(UInt32(midnight.timeIntervalSince1970 + 10 * 3600)))
+        bytes.replaceSubrange(0x0a..<0x0e, with: le(1920, count: 2) + le(1980, count: 2))
+        bytes[0x54] = 1
+        bytes.replaceSubrange(0x56..<0x5b, with: le(1920, count: 2) + le(1980, count: 2) + [4])
+        return bytes
+    }
+
+    @MainActor func testDirectSyncRetainsNapAndExplicitSessionBoundaryOnReplay() throws {
+        let directory = try directory(), rig = rig(directory)
+        let start = ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!)
+        rig.device.fetchData[.sleepSession] = (start, sleepBytes() + napBytes())
+        rig.run()
+        XCTAssertNil(rig.sync.message)
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let stored = rig.sync.archive.sleepSessions(endingOn: midnight, calendar: calendar)
+        let data = SleepSummary.combined(helio: SleepMeasurements(sessions: stored), health: [])
+        XCTAssertEqual(data.sessions.count, 2, "separate strap records must not merge across a short gap")
+        XCTAssertEqual(data.nights.first?.asleepDuration, 7 * 3600)
+        XCTAssertEqual(data.naps.first?.asleepDuration, 3600)
+        rig.run()
+        let restored = self.rig(directory)
+        XCTAssertEqual(restored.sync.archive.sessions.count, 2)
+        XCTAssertEqual(restored.sync.archive.sleepSessions(endingOn: midnight, calendar: calendar).count, 2)
+    }
+
+    @MainActor func testOneMinuteStageOverhangIsClippedToSessionWithoutInflatingSleep() throws {
+        let directory = try directory(), rig = rig(directory)
+        var bytes = sleepBytes()
+        bytes.replaceSubrange(0x56..<0x58, with: le(1319, count: 2))
+        bytes.replaceSubrange(0x62..<0x64, with: le(1801, count: 2))
+        rig.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), bytes)
+        rig.run()
+        XCTAssertNil(rig.sync.message)
+        XCTAssertEqual(rig.sync.archive.nights.first?.asleepDuration, 7 * 3600)
+        XCTAssertEqual(rig.sync.archive.nights.first?.start, midnight.addingTimeInterval(-2 * 3600))
+        XCTAssertEqual(rig.sync.archive.nights.first?.end, midnight.addingTimeInterval(6 * 3600))
+    }
+
+    @MainActor func testBadSleepRecordDoesNotDiscardValidNapOrAdvanceRetryCursor() throws {
+        let directory = try directory(), baseline = rig(directory)
+        installSleep(baseline); baseline.run()
+        let retry = rig(directory)
+        let start = ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!)
+        var outside = sleepBytes()
+        outside.replaceSubrange(0x56..<0x58, with: le(1200, count: 2))
+        retry.device.fetchData[.sleepSession] = (start, outside + napBytes())
+        installReadings(retry)
+        retry.run()
+        XCTAssertTrue(retry.sync.message?.contains("outside its recorded sleep period") == true)
+        XCTAssertEqual(retry.sync.diagnosticDetails,
+                       "sleep stage bounds; start offset: -120 min; end offset: -360 min; stage duration: 240 min")
+        XCTAssertEqual(retry.sync.archive.sessions.count, 2)
+        XCTAssertEqual(retry.sync.archive.sessions.first?.segments, baseline.sync.archive.sessions.first?.segments)
+        XCTAssertEqual(retry.sync.archive.cursors["72"], baseline.sync.archive.cursors["72"])
+        XCTAssertEqual(retry.sync.archive.lastSync, baseline.sync.archive.lastSync)
+        XCTAssertEqual(retry.sync.archive.heartRate.first?.value, 55)
+        XCTAssertEqual(self.rig(directory).sync.archive.sessions.count, 2, "valid nap must survive relaunch")
+        retry.device.fetchData[.sleepSession] = (start, sleepBytes() + napBytes())
+        retry.run()
+        XCTAssertNil(retry.sync.message)
+        XCTAssertNil(retry.sync.diagnosticDetails)
+        XCTAssertEqual(retry.sync.archive.sessions.count, 2)
+        XCTAssertGreaterThan(try XCTUnwrap(retry.sync.archive.cursors["72"]), try XCTUnwrap(baseline.sync.archive.cursors["72"]))
+    }
+
     @MainActor func testUnstagedRecordDoesNotRejectValidSleepOrBlockMeasurements() throws {
         let directory = try directory(), rig = rig(directory)
         var unstaged = sleepBytes()
@@ -269,7 +336,7 @@ final class HelioSleepTests: XCTestCase {
         XCTAssertEqual(rig.sync.archive.nights.count, 1)
         XCTAssertNil(rig.sync.message)
         let day = try XCTUnwrap(rig.sync.archive.nights.first?.day)
-        XCTAssertEqual(rig.sync.archive.nights(endingOn: day).first?.asleepDuration, 7 * 3600)
-        XCTAssertTrue(rig.sync.archive.nights(endingOn: day.addingTimeInterval(20 * 86400)).isEmpty)
+        XCTAssertEqual(rig.sync.archive.sleepSessions(endingOn: day).first?.asleepDuration, 7 * 3600)
+        XCTAssertTrue(rig.sync.archive.sleepSessions(endingOn: day.addingTimeInterval(20 * 86400)).isEmpty)
     }
 }

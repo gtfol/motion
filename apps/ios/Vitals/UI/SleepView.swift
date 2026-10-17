@@ -12,7 +12,7 @@ struct SleepTab: View {
     @State private var selectedTime: Date?
     private var measurements: SleepMeasurements {
         SleepSummary.combined(
-            helio: SleepMeasurements(nights: helio.archive.nights(endingOn: date),
+            helio: SleepMeasurements(sessions: helio.archive.sleepSessions(endingOn: date),
                                      heartRate: helio.archive.heartRate, respiratoryRate: helio.archive.respiratoryRate),
             health: health.records
         )
@@ -21,6 +21,7 @@ struct SleepTab: View {
     var body: some View {
         let data = measurements
         let night = data.nights.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
+        let naps = data.naps.filter { Calendar.current.isDate($0.day, inSameDayAs: date) }
         let week = data.nights.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
         NavigationStack {
             VStack(spacing: 0) {
@@ -47,6 +48,7 @@ struct SleepTab: View {
                             weeklyCharts(data, week: week)
                         } else if period == .daily, let night {
                             nightSummary(night)
+                            if !naps.isEmpty { napCards(naps, data: data) }
                             stageChart(night)
                             SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
                                           night: night, values: data.heartRate)
@@ -67,6 +69,11 @@ struct SleepTab: View {
                         }
                         if let message = helio.message {
                             Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                                .contextMenu {
+                                    if let details = helio.diagnosticDetails {
+                                        Button("copy sync details") { UIPasteboard.general.string = details }
+                                    }
+                                }
                         }
                         if let message = health.message {
                             Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
@@ -84,10 +91,10 @@ struct SleepTab: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     InfoButton(title: "sleep & breathing", paragraphs: [
                         "set up your Helio Strap and optional Apple Health access in settings. pull down here to sync.",
-                        "Helio is preferred for each night’s sleep, heart rate and breathing rate. Apple Health fills missing nights or metrics. each night uses one sleep recording, so overlapping records aren’t counted twice.",
+                        "Helio is preferred for each sleep period, heart rate and breathing rate. Apple Health fills missing periods or metrics. overlapping recordings aren’t counted twice.",
                         "keep the strap nearby and close Zepp if it holds the Bluetooth connection. Motion leaves recordings on the band and stores its copy on this iPhone.",
                         "breathing rate is breaths per minute, not a breath-by-breath waveform. Motion doesn’t estimate hypopnea, diagnose breathing problems, or reproduce Zepp’s sleep scores.",
-                        "shows the longest sleep period ending on each date. missing measurements stay blank. sleep totals exclude awake time. nightly averages use samples recorded during measured sleep."
+                        "the longest sleep period ending on each date is shown as main sleep; other periods appear as naps. this grouping may differ from Zepp’s sleep plan. missing measurements stay blank. sleep totals exclude awake time. averages use samples recorded during measured sleep."
                     ])
                 }.quietBackground()
             }
@@ -123,13 +130,13 @@ struct SleepTab: View {
         }
     }
 
-    private func nightSummary(_ night: SleepNight) -> some View {
+    private func nightSummary(_ night: SleepNight, identifier: String = "sleep-duration") -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("time asleep").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                     Text(sleepDuration(night.asleepDuration)).font(VitalsStyle.live).minimumScaleFactor(0.6).lineLimit(1)
-                        .accessibilityIdentifier("sleep-duration")
+                        .accessibilityIdentifier(identifier)
                 }
                 Spacer()
                 Image(systemName: "moon.fill").font(.system(size: 32)).foregroundStyle(SleepStage.deep.tint)
@@ -160,7 +167,7 @@ struct SleepTab: View {
 
     private func stageChart(_ night: SleepNight) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeading(title: "through the night", detail: "touch to explore")
+            SectionHeading(title: "sleep stages", detail: "touch to explore")
             Chart {
                 ForEach(night.segments) { segment in
                     RectangleMark(xStart: .value("start", segment.start), xEnd: .value("end", segment.end),
@@ -185,12 +192,57 @@ struct SleepTab: View {
         }.sleepCard()
     }
 
+    private func napCards(_ naps: [SleepNight], data: SleepMeasurements) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("naps").font(VitalsStyle.heading)
+            ForEach(naps) { nap in
+                NavigationLink {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            nightSummary(nap, identifier: "nap-detail-duration")
+                            stageChart(nap)
+                            SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
+                                          night: nap, values: data.heartRate)
+                            SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
+                                          night: nap, values: data.respiratoryRate)
+                        }.padding(VitalsStyle.gutter)
+                    }
+                    .vitalsScreen().vitalsTitle("nap")
+                    .onAppear { selectedTime = nil }
+                    .onDisappear { selectedTime = nil }
+                } label: {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(sleepDuration(nap.asleepDuration)).font(VitalsStyle.entry)
+                                .accessibilityIdentifier("sleep-nap-duration")
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundStyle(VitalsStyle.secondary)
+                        }
+                        Text("\(nap.start.formatted(date: .omitted, time: .shortened)) – \(nap.end.formatted(date: .omitted, time: .shortened))")
+                            .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                        Chart(nap.segments) { segment in
+                            RectangleMark(xStart: .value("start", segment.start), xEnd: .value("end", segment.end),
+                                          yStart: .value("bottom", 0), yEnd: .value("top", 1))
+                                .foregroundStyle(segment.stage.tint)
+                        }
+                        .chartXScale(domain: nap.start...nap.end)
+                        .chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 22)
+                        .accessibilityHidden(true)
+                    }.sleepCard()
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("sleep-nap")
+            }
+        }
+    }
+
     private func weeklyCharts(_ data: SleepMeasurements, week: [SleepNight]) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+        let naps = data.naps.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
+        return VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(weekDomain.lowerBound.formatted(.dateTime.month(.abbreviated).day())) – \(date.formatted(.dateTime.month(.abbreviated).day()))")
                     .font(VitalsStyle.heading).accessibilityIdentifier("sleep-week-range")
-                Text("\(week.count) \(week.count == 1 ? "night" : "nights") recorded")
+                Text("\(week.count) \(week.count == 1 ? "day" : "days") recorded")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
             VStack(alignment: .leading, spacing: 12) {
@@ -210,6 +262,21 @@ struct SleepTab: View {
                 .chartXAxis { AxisMarks(values: .stride(by: .day)) { AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true) } }
                 .chartYAxisLabel("hours").frame(height: 150)
             }.sleepCard()
+            if !naps.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("naps").font(VitalsStyle.heading).accessibilityIdentifier("sleep-weekly-naps")
+                    Text("\(naps.count) \(naps.count == 1 ? "nap" : "naps") · \(sleepDuration(naps.reduce(0) { $0 + $1.asleepDuration }))")
+                        .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                    Chart(naps) { nap in
+                        BarMark(x: .value("date", nap.day, unit: .day), y: .value("minutes", nap.asleepDuration / 60))
+                            .foregroundStyle(SleepStage.rem.tint)
+                            .accessibilityLabel("\(nap.day.formatted(date: .abbreviated, time: .omitted)), nap, \(sleepDuration(nap.asleepDuration))")
+                    }
+                    .chartXScale(domain: weekDomain)
+                    .chartXAxis { AxisMarks(values: .stride(by: .day)) { AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true) } }
+                    .chartYAxisLabel("minutes").frame(height: 130)
+                }.sleepCard()
+            }
             VStack(alignment: .leading, spacing: 12) {
                 Text("sleep schedule").font(VitalsStyle.heading)
                 Text("bedtime → wake time").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)

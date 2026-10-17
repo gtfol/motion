@@ -11,6 +11,7 @@ import Observation
     private(set) var busy = false
     private(set) var status = "choose your Helio Strap"
     private(set) var message: String?
+    private(set) var diagnosticDetails: String?
     private(set) var revision = 0
     @ObservationIgnored var send: ((ZeppWrite) -> Void)?
     @ObservationIgnored var requestConnection: (() -> Void)?
@@ -41,7 +42,7 @@ import Observation
         shutdown()
         strapID = id
         supported = name.map { ZeppDeviceModel.match(advertisedName: $0) == .helioStrap } ?? false
-        archive = HelioSleepArchive(); lastAttempt = nil; message = nil; hasKey = false; keyRejected = false; unreadableStorage = false
+        archive = HelioSleepArchive(); lastAttempt = nil; message = nil; diagnosticDetails = nil; hasKey = false; keyRejected = false; unreadableStorage = false
         guard let id, supported else { status = "choose your Helio Strap"; revision += 1; return }
         do {
             archive = try repository.load(id)
@@ -60,7 +61,7 @@ import Observation
         guard ZeppAuthKey(hex: text) != nil else { message = "enter the 32-character band key."; return false }
         do {
             try HelioBandKeys.save(text, scope: repository.keyScope, strap: strapID)
-            hasKey = true; keyRejected = false; message = nil; status = "ready to sync"
+            hasKey = true; keyRejected = false; message = nil; diagnosticDetails = nil; status = "ready to sync"
             return true
         } catch { message = "couldn’t save the band key. unlock your iPhone and try again."; return false }
     }
@@ -70,11 +71,15 @@ import Observation
         shutdown()
         do {
             try HelioBandKeys.remove(scope: repository.keyScope, strap: strapID)
-            hasKey = false; keyRejected = false; status = "add your band key"; message = nil
+            hasKey = false; keyRejected = false; status = "add your band key"; message = nil; diagnosticDetails = nil
         } catch { message = "couldn’t remove the key. unlock your iPhone and try again." }
     }
 
     func sync(force: Bool = false) {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if !force, args.contains("-ui-testing"), args.contains("-ui-testing-strap") { return }
+        #endif
         // Files/Keychain can be unavailable during a Bluetooth relaunch before first unlock.
         // Retry access when Motion is opened, without overwriting the unreadable archive.
         if unreadableStorage, let strapID, supported, !busy {
@@ -89,7 +94,7 @@ import Observation
         guard !keyRejected else { message = "the band rejected this key. replace it in strap settings."; return }
         if !force, let last = lastAttempt ?? archive.lastSync, Date.now.timeIntervalSince(last) < 15 * 60 { return }
         lastAttempt = .now
-        message = nil; transferMessage = nil; failedTypes = []; pending = true; busy = true; status = "connecting to strap…"
+        message = nil; diagnosticDetails = nil; transferMessage = nil; failedTypes = []; pending = true; busy = true; status = "connecting to strap…"
         deadline = Task { [weak self] in
             try? await Task.sleep(for: .seconds(300))
             guard !Task.isCancelled else { return }
@@ -190,13 +195,26 @@ import Observation
                 guard let strapID else { fail("choose your strap again."); return }
                 do {
                     var updated = archive
-                    try updated.merge(round, now: syncDate)
+                    let sleepIssue = try updated.merge(round, now: syncDate)
                     try repository.save(updated, strap: strapID)
                     archive = updated; revision += 1
-                    let next = fetch!.commit(roundID: round.id, durable: true); handle(next)
+                    if let sleepIssue {
+                        failedTypes.insert(round.type.rawValue)
+                        if transferMessage == nil {
+                            transferMessage = sleepIssue.message(for: round.type)
+                            diagnosticDetails = sleepIssue.diagnosticDetails
+                        }
+                        // Valid sessions are durable, but leave the cursor unchanged for the rejected record.
+                        let next = fetch!.skipType(roundID: round.id); handle(next)
+                    } else {
+                        let next = fetch!.commit(roundID: round.id, durable: true); handle(next)
+                    }
                 } catch let error as HelioTransferError {
                     failedTypes.insert(round.type.rawValue)
-                    if transferMessage == nil { transferMessage = error.message(for: round.type) }
+                    if transferMessage == nil {
+                        transferMessage = error.message(for: round.type)
+                        diagnosticDetails = error.diagnosticDetails
+                    }
                     // An unusable sleep record must not block the independent HR/breathing fetches.
                     // The uncommitted copy and cursor are discarded; the strap keeps the transfer.
                     let next = fetch!.skipType(roundID: round.id); handle(next)
@@ -240,7 +258,7 @@ import Observation
         }
     }
     private func fail(_ text: String) {
-        shutdown(); status = "sleep sync paused"; message = text
+        shutdown(); status = "sleep sync paused"; message = text; diagnosticDetails = nil
     }
     private func armTimeout(seconds: Double) {
         timeout?.cancel()

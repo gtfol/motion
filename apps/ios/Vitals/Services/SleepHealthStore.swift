@@ -94,7 +94,7 @@ import Observation
             guard generation == request else { return }
             let usable = samples.filter { Self.stage($0.value) != nil && $0.endDate <= end }
             for (id, values) in Dictionary(grouping: usable, by: { $0.sourceRevision.source.bundleIdentifier }) {
-                bySource[id, default: SleepMeasurements()].nights = SleepSummary.nights(values.compactMap { sample in
+                bySource[id, default: SleepMeasurements()].sessions = SleepSummary.sessions(values.compactMap { sample in
                     Self.stage(sample.value).map { SleepSegment(start: sample.startDate, end: sample.endDate, stage: $0) }
                 }).filter { $0.day <= day }
             }
@@ -150,12 +150,24 @@ import Observation
                 (5.4, 6, .rem), (6, 7, .core), (7, 8, .rem)
             ]
             let segments = pattern.map { SleepSegment(start: start.addingTimeInterval($0.0 * 3_600), end: start.addingTimeInterval($0.1 * 3_600), stage: $0.2) }
-            measurements.nights.append(SleepNight(day: day, segments: segments))
+            measurements.sessions.append(SleepNight(day: day, segments: segments))
             for minute in stride(from: 0, to: 480, by: 5) {
                 let at = start.addingTimeInterval(Double(minute) * 60)
                 measurements.heartRate.append(SleepReading(date: at, value: 55 + sin(Double(minute) / 24) * 6))
                 if offset != -1 { measurements.respiratoryRate.append(SleepReading(date: at, value: 13 + sin(Double(minute) / 34))) }
             }
+        }
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing-naps") {
+            let day = calendar.startOfDay(for: date)
+            func part(_ start: Int, _ end: Int, _ stage: SleepStage) -> SleepSegment {
+                SleepSegment(start: day.addingTimeInterval(Double(start * 60)),
+                             end: day.addingTimeInterval(Double(end * 60)), stage: stage)
+            }
+            measurements.sessions.removeAll { $0.day == day }
+            measurements.sessions += SleepSummary.sessions([
+                part(174, 230, .deep), part(230, 231, .awake), part(231, 272, .core),
+                part(772, 850, .core), part(850, 851, .awake), part(851, 903, .rem)
+            ])
         }
         records = [measurements]
     }

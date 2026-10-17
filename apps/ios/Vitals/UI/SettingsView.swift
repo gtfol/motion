@@ -149,8 +149,30 @@ struct SettingsTab: View {
                     TextAction("forget", role: .destructive, secondary: true) { monitor.forget() }
                 }
                 if helio.supported {
-                    TextAction("strap settings") { showingSleepSetup = true }
-                        .accessibilityIdentifier("helio-setup")
+                    HStack(spacing: 24) {
+                        TextAction("strap settings") { showingSleepSetup = true }
+                            .accessibilityIdentifier("helio-setup")
+                        TextAction(helio.busy ? "syncing…" : "sync now") { helio.sync(force: true) }
+                            .disabled(!helio.hasKey || helio.busy)
+                            .accessibilityIdentifier("helio-sync")
+                    }
+                    if helio.busy {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                        }
+                    } else if let synced = helio.archive.lastSync {
+                        Text("last synced \(synced.formatted(date: .abbreviated, time: .shortened))")
+                            .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                    }
+                    if let message = helio.message {
+                        Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                            .contextMenu {
+                                if let details = helio.diagnosticDetails {
+                                    Button("copy sync details") { UIPasteboard.general.string = details }
+                                }
+                            }
+                    }
                 }
             } else {
                 TextAction("connect strap") { showingSleepSetup = true }
