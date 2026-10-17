@@ -12,7 +12,7 @@ struct SleepTab: View {
     @State private var selectedTime: Date?
     private var measurements: SleepMeasurements {
         SleepSummary.combined(
-            helio: SleepMeasurements(nights: helio.archive.nights(endingOn: date),
+            helio: SleepMeasurements(sessions: helio.archive.sleepSessions(endingOn: date),
                                      heartRate: helio.archive.heartRate, respiratoryRate: helio.archive.respiratoryRate),
             health: health.records
         )
@@ -20,8 +20,8 @@ struct SleepTab: View {
 
     var body: some View {
         let data = measurements
-        let night = data.nights.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
-        let week = data.nights.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
+        let night = data.days.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
+        let week = data.days.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
         NavigationStack {
             VStack(spacing: 0) {
                 Picker("sleep view", selection: $period) {
@@ -67,6 +67,11 @@ struct SleepTab: View {
                         }
                         if let message = helio.message {
                             Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
+                                .contextMenu {
+                                    if let details = helio.diagnosticDetails {
+                                        Button("copy sync details") { UIPasteboard.general.string = details }
+                                    }
+                                }
                         }
                         if let message = health.message {
                             Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
@@ -84,10 +89,10 @@ struct SleepTab: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     InfoButton(title: "sleep & breathing", paragraphs: [
                         "set up your Helio Strap and optional Apple Health access in settings. pull down here to sync.",
-                        "Helio is preferred for each night’s sleep, heart rate and breathing rate. Apple Health fills missing nights or metrics. each night uses one sleep recording, so overlapping records aren’t counted twice.",
+                        "Helio is preferred for each sleep period, heart rate and breathing rate. Apple Health fills missing periods or metrics. overlapping recordings aren’t counted twice.",
                         "keep the strap nearby and close Zepp if it holds the Bluetooth connection. Motion leaves recordings on the band and stores its copy on this iPhone.",
                         "breathing rate is breaths per minute, not a breath-by-breath waveform. Motion doesn’t estimate hypopnea, diagnose breathing problems, or reproduce Zepp’s sleep scores.",
-                        "shows the longest sleep period ending on each date. missing measurements stay blank. sleep totals exclude awake time. nightly averages use samples recorded during measured sleep."
+                        "all sleep periods ending on the selected date share one timeline and total, including naps. gaps stay blank. sleep totals exclude awake time. averages use samples recorded during measured sleep."
                     ])
                 }.quietBackground()
             }
@@ -160,7 +165,7 @@ struct SleepTab: View {
 
     private func stageChart(_ night: SleepNight) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeading(title: "through the night", detail: "touch to explore")
+            SectionHeading(title: "sleep stages", detail: "touch to explore")
             Chart {
                 ForEach(night.segments) { segment in
                     RectangleMark(xStart: .value("start", segment.start), xEnd: .value("end", segment.end),
@@ -174,7 +179,7 @@ struct SleepTab: View {
             }
             .chartYScale(domain: (night.hasStages ? [SleepStage.awake, .rem, .core, .deep] + (night.duration(.asleep) > 0 ? [.asleep] : []) : [.awake, .asleep]).map(\.label))
             .chartXScale(domain: night.start...night.end)
-            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour().minute()) } }
+            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour()) } }
             .chartXSelection(value: $selectedTime)
             .frame(height: 170)
             .accessibilityIdentifier("sleep-stages-chart")
@@ -186,11 +191,12 @@ struct SleepTab: View {
     }
 
     private func weeklyCharts(_ data: SleepMeasurements, week: [SleepNight]) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+        let sessions = data.sessions.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
+        return VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(weekDomain.lowerBound.formatted(.dateTime.month(.abbreviated).day())) – \(date.formatted(.dateTime.month(.abbreviated).day()))")
                     .font(VitalsStyle.heading).accessibilityIdentifier("sleep-week-range")
-                Text("\(week.count) \(week.count == 1 ? "night" : "nights") recorded")
+                Text("\(week.count) \(week.count == 1 ? "day" : "days") recorded")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             }
             VStack(alignment: .leading, spacing: 12) {
@@ -209,11 +215,13 @@ struct SleepTab: View {
                 .chartXScale(domain: weekDomain)
                 .chartXAxis { AxisMarks(values: .stride(by: .day)) { AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true) } }
                 .chartYAxisLabel("hours").frame(height: 150)
+                .accessibilityIdentifier("sleep-weekly-duration-chart")
+                .accessibilityValue(week.map { "\($0.day.formatted(date: .abbreviated, time: .omitted)): \(sleepDuration($0.asleepDuration))" }.joined(separator: "; "))
             }.sleepCard()
             VStack(alignment: .leading, spacing: 12) {
                 Text("sleep schedule").font(VitalsStyle.heading)
                 Text("bedtime → wake time").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                Chart(week) { night in
+                Chart(sessions) { night in
                     RectangleMark(x: .value("date", night.day, unit: .day),
                                   yStart: .value("bedtime", clockHour(night.start, relativeTo: night.day)),
                                   yEnd: .value("wake time", clockHour(night.end, relativeTo: night.day)), width: .ratio(0.5))
@@ -297,7 +305,7 @@ private struct SleepRateCard: View {
                 }
             }
             if points.isEmpty {
-                Text("no measurements recorded for this sleep period.")
+                Text("no measurements recorded during sleep.")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             } else {
                 Chart {
@@ -309,7 +317,7 @@ private struct SleepRateCard: View {
                 }
                 .chartXScale(domain: night.start...night.end)
                 .chartYScale(domain: sleepRateDomain(points.map(\.value)))
-                .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour().minute()) } }
+                .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour()) } }
                 .chartXSelection(value: $selectedTime).frame(height: 130)
                 if let time = selectedTime, let point = points.min(by: { abs($0.date.timeIntervalSince(time)) < abs($1.date.timeIntervalSince(time)) }) {
                     Text("\(point.date.formatted(date: .omitted, time: .shortened)) · \(point.value.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")

@@ -1,5 +1,8 @@
 import SwiftData
 import SwiftUI
+#if DEBUG
+import ZeppKit
+#endif
 
 @main struct VitalsApp: App {
     // Created in the app's initializer, not in a view task, so a background relaunch by Bluetooth state
@@ -212,10 +215,28 @@ struct UnavailableHealthExporter: WorkoutExporting {
         let container = try VitalsContainer.make(directory: directory)
         let store = WorkoutStore(container: container)
         let preferences = try store.preferences()
+        #if DEBUG
+        let testStrap = !activateBluetooth && ProcessInfo.processInfo.arguments.contains("-ui-testing")
+            && ProcessInfo.processInfo.arguments.contains("-ui-testing-strap")
+        if testStrap {
+            preferences.strapID = UUID(uuidString: "00000000-0000-0000-0000-000000000042")!
+            preferences.strapName = "Amazfit Helio Strap"
+        }
+        #endif
         let monitor = HeartRateMonitor(restoreIdentifier: "\(Bundle.main.bundleIdentifier ?? "vitals").heart-rate",
                                        strapID: preferences.strapID, strapName: preferences.strapName)
-        let helio = HelioSleepSync(directory: directory)
+        let helio: HelioSleepSync
+        #if DEBUG
+        helio = testStrap
+            ? HelioSleepSync(directory: directory, keyReader: { _ in ZeppAuthKey(bytes: [UInt8](repeating: 0x42, count: 16)) })
+            : HelioSleepSync(directory: directory)
+        #else
+        helio = HelioSleepSync(directory: directory)
+        #endif
         monitor.configureHelio(helio)
+        #if DEBUG
+        if testStrap { helio.requestConnection = {} } // UI fixture never touches Bluetooth or the Keychain.
+        #endif
         self.helio = helio
         let coordinator = SessionCoordinator(store: store, exporter: exporter)
         monitor.onReading = { [weak coordinator, weak monitor] reading in

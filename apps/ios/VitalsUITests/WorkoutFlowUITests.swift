@@ -34,6 +34,62 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m")
     }
 
+    @MainActor func testAllSleepPeriodsShareOneTimelineAndDailyTotal() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-sleep", "-ui-testing-naps"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "3h 47m")
+        XCTAssertFalse(app.buttons["sleep-nap"].exists)
+        XCTAssertFalse(app.staticTexts["naps"].exists)
+        capture(app, "combined sleep total")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).press(forDuration: 0.05,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        XCTAssertTrue(app.otherElements["sleep-stages-chart"].firstMatch.exists)
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "sleep stages")).count, 1)
+        capture(app, "combined sleep timeline with gap")
+        app.segmentedControls["sleep-period"].buttons["weekly"].tap()
+        let chart = app.otherElements["sleep-weekly-duration-chart"].firstMatch
+        XCTAssertTrue(chart.waitForExistence(timeout: 5))
+        XCTAssertTrue((chart.value as? String)?.contains("3h 47m") == true)
+        XCTAssertFalse(app.staticTexts["sleep-weekly-naps"].exists)
+        XCTAssertFalse(app.staticTexts["naps"].exists)
+        capture(app, "weekly combined sleep totals")
+        app.swipeUp()
+        capture(app, "weekly schedule keeps gaps between periods")
+    }
+
+    @MainActor func testStrapSyncIsBesideSettingsAndSetupOnlyManagesKey() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-strap"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-settings"].waitForExistence(timeout: 15))
+        app.buttons["tab-settings"].tap()
+        let setup = app.buttons["helio-setup"], sync = app.buttons["helio-sync"]
+        for _ in 0..<3 where !setup.isHittable { app.swipeUp() }
+        XCTAssertTrue(setup.isHittable)
+        XCTAssertTrue(sync.isHittable)
+        XCTAssertTrue(sync.isEnabled)
+        XCTAssertEqual(setup.frame.midY, sync.frame.midY, accuracy: 2)
+        capture(app, "strap settings with sync beside it")
+        setup.tap()
+        XCTAssertTrue(app.secureTextFields["helio-key"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["helio-save"].label, "save key")
+        XCTAssertFalse(app.buttons["sync now"].isHittable, "the sync action belongs to the screen behind the key sheet")
+        XCTAssertFalse(app.buttons["save & sync"].exists)
+        XCTAssertFalse(app.staticTexts["ready to sync"].exists)
+        capture(app, "strap key settings")
+        app.buttons["close"].tap()
+        sync.tap()
+        XCTAssertEqual(sync.label, "syncing…")
+        XCTAssertFalse(sync.isEnabled)
+        XCTAssertTrue(app.staticTexts["connecting to strap…"].exists)
+    }
+
     @MainActor func testSleepConnectionsLiveInSettings() {
         continueAfterFailure = false
         let app = XCUIApplication()

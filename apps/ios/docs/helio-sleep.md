@@ -2,12 +2,18 @@
 
 Motion reads the Helio Strap's stored history over Bluetooth. Zepp's cloud API and
 Apple Health are not in this path. The single Sleep view prefers Helio data, with
-optional Apple Health access filling missing nights or metrics.
+optional Apple Health access filling missing sleep periods or metrics.
 
-Sleep opens in **daily**, with only the selected night's duration, stages, heart
-rate and breathing. **Weekly** contains the seven-day duration, schedule and rate
-charts ending on the selected date. Its arrows move seven days at a time, up to
-today. Switching views keeps the selected date; both support pull-to-refresh.
+Sleep opens in **daily**, with every sleep period ending on the selected date combined
+into one total, stage timeline, and heart/breathing chart, including naps. The chart
+retains each period's actual times and leaves gaps between periods empty; awake time
+and gaps do not count toward the sleep total or asleep averages. **Weekly** uses the
+same combined daily totals and averages. Its schedule shows every recorded period
+without filling the time between them. There is no separate nap card or nap total.
+The weekly arrows move seven days at a time, up to today. Switching views keeps the
+selected date; both support pull-to-refresh.
+Explicit Helio record boundaries are retained, even when sessions are close together.
+Health stage samples have no session IDs; gaps over one hour separate their periods.
 
 ## Setup
 
@@ -18,7 +24,9 @@ today. Switching views keeps the selected date; both support pull-to-refresh.
    This may need a computer and a one-time Zepp login. Motion does not collect the
    Zepp login or add an ongoing Zepp account integration.
 4. Paste the key into Motion's secure field, close Zepp, keep the band nearby,
-   and choose **save & sync**. Never paste the key into issues, chat or logs.
+   and choose **save key**. In Settings → strap, choose **sync now** next to
+   **strap settings**. The key sheet only manages the key; sync progress, errors and
+   the last successful sync appear on the main Settings screen. Never paste the key into issues, chat or logs.
 5. Open Motion to sync, or pull down in Sleep to retry. Foreground automatic attempts
    are throttled to fifteen minutes; manual retries are immediate.
 
@@ -29,11 +37,12 @@ with **open Health** instead of silently repeating the authorization request.
 Use Health → profile → Apps → motion to change access. Motion refreshes readable
 measurements after the initial request and when returning from Health. An empty
 query is not treated as proof that access was denied.
-No source picker is needed. A Helio sleep record wins for its wake date; otherwise
-Motion selects one Health recording, preferring stages and then sleep coverage.
+No source picker is needed. A Helio sleep record wins for overlapping sleep periods; otherwise
+Motion selects a Health recording, preferring stages and then sleep coverage. A
+separate Health nap on the same date can fill a gap without duplicating the main sleep.
 Overlapping recordings, including duplicates assigned to neighboring dates, are not
-added together. Stages from different recorders are never spliced into one night.
-For each night's heart rate and breathing rate separately, Helio wins if it has
+added together. Overlapping stages from different recorders are never spliced; selected nonoverlapping periods share the daily timeline.
+For each sleep period's heart rate and breathing rate separately, Helio wins if it has
 usable asleep readings; otherwise Health supplies that metric. Health readings can
 fill a Helio night even when Health has no sleep-stage record. Each metric keeps
 one recorder's trace, preferring the selected Health sleep recorder when available.
@@ -56,13 +65,22 @@ that account's band keys and local history. Signing out preserves its isolated c
   account and strap. Files are protected and excluded from backups. They are not
   uploaded through workout sync or written back to Apple Health.
 - CRC, lengths, packet order, plausible dates and sleep-stage intervals are checked.
-  Bad transfers leave previous saved data and cursors intact. Interrupted transfers
-  may retain earlier complete, verified rounds. Unknown stages stay gaps.
+  Bad transfers leave previous saved data and cursors intact. Within a verified
+  sleep round, each record is validated independently: valid sessions are saved even
+  when another record is rejected, while the rejected record's old copy is kept.
+  That sleep cursor does not advance, so a later sync can retry it. Unknown stages stay gaps.
+  Stage endpoints may overhang the declared session by at most one minute; these
+  edges are clipped to the session, never shifted or expanded. Larger discrepancies,
+  reversed intervals and overlaps still reject that record. This is a bounded
+  compatibility tolerance, not a hardware-confirmed explanation of the October 17 error.
 - A zero-stage sleep record is an expected empty record and does not reject other
-  nights in the same transfer. An overflowing stage table, invalid dates or invalid
-  stage intervals still reject that type's round without advancing its saved cursor.
+  sessions in the same transfer. An overflowing stage table, invalid dates or invalid
+  stage intervals reject that record without advancing the sleep cursor.
   Motion then continues with independent heart-rate and breathing downloads. Content
   errors identify the reason separately from failures writing the local archive.
+  Long-press a sync error in Settings or Sleep to **copy sync details**. These
+  diagnostics contain relative minute offsets only, with no key, packets, absolute
+  timestamps, account identity or heart/breathing readings; nothing is uploaded.
 - Every fetch acknowledgement uses **keep on device** (`03 09`), including failures.
   Motion never sends the delete acknowledgement (`03 01`), sets the band clock,
   or changes sleep/heart-rate recording settings. Existing band settings determine
@@ -86,9 +104,12 @@ failure-path acknowledgement checks.
 ## Hardware validation still required
 
 Simulator tests establish the integration behavior, not real firmware compatibility.
-The October 15 device screenshot reached the history merge/save path after successful
-authentication. Its old generic error does not identify which validation or storage
-check failed; a completed real-device sync and timestamp comparison remain unverified.
+The October 17 device screenshots confirm authentication and a received sleep record,
+but stage-bounds validation rejected it. They do not expose the raw header or stage
+minute values, so the exact firmware mismatch is still unverified. Opening Zepp may
+populate the Health fallback; that does not verify direct sync. The one-minute edge
+tolerance and isolation of bad records are covered by synthetic wire tests; a completed
+real-device sync and timestamp comparison remain required.
 Before a public release, verify the following with the user's band key entered on
 their device:
 
@@ -97,6 +118,7 @@ their device:
   samples against the same recorded night in Zepp. The upstream protocol's sleep
   minute-reference formula is inferred; verify timestamps, including time-zone/DST
   transitions, against a real capture before claiming accuracy.
+- [ ] Compare all sleep periods with Zepp, including a nap before daytime sleep; verify the combined total and empty gap on the timeline.
 - [ ] Reopen and repeat sync: no duplicates; an amended night replaces its earlier version.
 - [ ] Check a workout's live heart-rate stream during a sleep fetch.
 - [ ] Move out of range, turn Bluetooth off/on, lock/unlock, then retry without data loss.

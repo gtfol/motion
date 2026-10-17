@@ -7,6 +7,7 @@ struct HelioSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var choosing = false
     @State private var key = ""
+    @State private var keyMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -25,25 +26,20 @@ struct HelioSetupView: View {
                 Section {
                     if helio.hasKey {
                         Label("key saved on this iPhone", systemImage: "checkmark.lock")
-                        Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                        if let synced = helio.archive.lastSync {
-                            Text("last synced \(synced.formatted(date: .abbreviated, time: .shortened))")
-                                .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                        }
                     }
                     SecureField(helio.hasKey ? "replacement key" : "32-character key", text: $key)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                         .keyboardType(.asciiCapable).privacySensitive()
                         .accessibilityIdentifier("helio-key")
                         .disabled(!helio.supported)
-                    Button("save & sync") {
+                    Button("save key") {
                         if helio.saveKey(key) {
-                            key = ""; helio.sync(force: true); dismiss()
-                        }
+                            key = ""; dismiss()
+                        } else { keyMessage = helio.message }
                     }
                     .disabled(!helio.supported || ZeppAuthKey(hex: key) == nil || helio.busy)
                     .accessibilityIdentifier("helio-save")
-                    if let message = helio.message {
+                    if let message = keyMessage {
                         Text(message).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.caution)
                     }
                 } header: {
@@ -60,8 +56,9 @@ struct HelioSetupView: View {
                             .font(VitalsStyle.caption)
                     }
                     if helio.hasKey {
-                        Button("sync now") { helio.sync(force: true); dismiss() }.disabled(helio.busy)
-                        Button("remove band key", role: .destructive) { helio.forgetKey(); key = "" }
+                        Button("remove band key", role: .destructive) {
+                            helio.forgetKey(); key = ""; keyMessage = helio.message
+                        }
                     }
                 }
             }
@@ -70,7 +67,7 @@ struct HelioSetupView: View {
             .vitalsTitle("Helio Strap")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("close") { dismiss() } } }
             .sheet(isPresented: $choosing) { StrapChooser(forSleep: true) }
-            .onChange(of: helio.strapID) { _, _ in key = "" }
+            .onChange(of: helio.strapID) { _, _ in key = ""; keyMessage = nil }
             .onDisappear { key = "" }
         }
         .presentationBackground(VitalsStyle.canvas)
