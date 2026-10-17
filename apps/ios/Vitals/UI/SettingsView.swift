@@ -236,7 +236,7 @@ struct SettingsTab: View {
 
     private func refreshSleepHealth() async {
         await sleepHealth.load(endingOn: .now)
-        let hasData = sleepHealth.records.contains { !$0.nights.isEmpty || !$0.heartRate.isEmpty || !$0.respiratoryRate.isEmpty }
+        let hasData = sleepHealth.records.contains { !$0.days.isEmpty || !$0.heartRate.isEmpty || !$0.respiratoryRate.isEmpty }
         sleepHealthMessage = sleepHealth.message ?? (hasData ? "sleep data refreshed" : "no sleep data is readable yet. check access in Health or try another date.")
     }
 

@@ -15,7 +15,7 @@ struct HelioSleepArchive: Codable {
     var cursors: [String: Date] = [:]
     var lastSync: Date?
 
-    var nights: [SleepNight] { SleepSummary.mainSessions(sessions.flatMap { SleepSummary.sessions($0.segments, maximumGap: .infinity) }) }
+    var nights: [SleepNight] { SleepSummary.dailySummaries(sessions.flatMap { SleepSummary.sessions($0.segments, maximumGap: .infinity) }) }
 
     /// Limit chart work to the visible week, with two days of margin for cross-midnight sleep.
     func sleepSessions(endingOn date: Date, calendar: Calendar = .current) -> [SleepNight] {

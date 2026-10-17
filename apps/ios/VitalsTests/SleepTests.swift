@@ -36,7 +36,7 @@ final class SleepTests: XCTestCase {
         XCTAssertNil(night.average([]), "missing data must not become zero")
     }
 
-    func testMainSleepUsesWakeDateAndExcludesSeparateNap() throws {
+    func testAllSleepUsesWakeDateAndIncludesNap() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let day = calendar.startOfDay(for: origin)
@@ -47,11 +47,11 @@ final class SleepTests: XCTestCase {
         let nights = SleepSummary.nights(input, calendar: calendar)
         XCTAssertEqual(nights.count, 1)
         XCTAssertEqual(nights.first?.day, day)
-        XCTAssertEqual(nights.first?.asleepDuration, 8 * 3_600)
+        XCTAssertEqual(nights.first?.asleepDuration, 9 * 3_600)
         XCTAssertFalse(try XCTUnwrap(nights.first).hasStages)
     }
 
-    func testEarlyMorningNapSurvivesLongerDaytimeSleep() throws {
+    func testEarlyMorningNapAndDaytimeSleepShareOneTimelineAndTotal() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let day = calendar.startOfDay(for: origin)
@@ -67,10 +67,23 @@ final class SleepTests: XCTestCase {
         let result = SleepSummary.combined(helio: SleepMeasurements(sessions: sessions), health: [])
         XCTAssertEqual(result.sessions.count, 2)
         XCTAssertEqual(Set(result.sessions.map(\.id)).count, 2, "sessions on one date need separate UI identities")
-        XCTAssertEqual(result.nights.first?.asleepDuration, 130 * 60)
-        XCTAssertEqual(result.naps.first?.asleepDuration, 97 * 60)
-        XCTAssertEqual(result.naps.first?.day, day)
-        XCTAssertEqual(result.naps.first?.start, day.addingTimeInterval(174 * 60))
+        XCTAssertEqual(result.days.count, 1)
+        let summary = try XCTUnwrap(result.days.first)
+        XCTAssertEqual(summary.asleepDuration, 227 * 60)
+        XCTAssertEqual(summary.day, day)
+        XCTAssertEqual(summary.start, day.addingTimeInterval(174 * 60))
+        XCTAssertEqual(summary.end, day.addingTimeInterval(903 * 60))
+        XCTAssertEqual(summary.segments.count, 6)
+        XCTAssertEqual(summary.duration(.deep), 56 * 60)
+        XCTAssertEqual(summary.duration(.core), 119 * 60)
+        XCTAssertEqual(summary.duration(.rem), 52 * 60)
+        XCTAssertEqual(summary.duration(.awake), 2 * 60)
+        XCTAssertEqual(summary.awakeCount, 2)
+        XCTAssertNil(summary.stage(at: day.addingTimeInterval(500 * 60)), "the gap between sleep periods stays empty")
+        let readings = [(200, 50.0), (230, 90.0), (500, 150.0), (800, 60.0)]
+            .map { SleepReading(date: day.addingTimeInterval(Double($0.0 * 60)), value: $0.1) }
+        XCTAssertEqual(summary.readings(readings).map(\.value), [50, 90, 60], "charts exclude the gap, but keep measured awakenings")
+        XCTAssertEqual(summary.average(readings), 55, "the combined average uses both periods, excluding awake time and gaps")
     }
 
     func testHealthFillsSeparateNapsOnHelioDateWithoutDuplicatingThem() throws {
@@ -87,24 +100,44 @@ final class SleepTests: XCTestCase {
             respiratoryRate: [SleepReading(date: day.addingTimeInterval(14.5 * 3600), value: 13)])
         let before = SleepSummary.combined(helio: SleepMeasurements(sessions: [main]), health: [health, health])
         XCTAssertEqual(before.sessions.count, 3)
-        XCTAssertEqual(before.naps.count, 2)
-        XCTAssertEqual(before.nights.first?.asleepDuration, 7 * 3600)
+        XCTAssertEqual(before.days.count, 1)
+        XCTAssertEqual(before.days.first?.asleepDuration, 8.5 * 3600)
         XCTAssertEqual(nap.average(before.heartRate), 62)
         XCTAssertNil(main.average(before.heartRate), "nap readings must not change the main sleep average")
         let after = SleepSummary.combined(helio: SleepMeasurements(sessions: [main, nap],
             heartRate: [SleepReading(date: day.addingTimeInterval(14.5 * 3600), value: 55)]), health: [health])
         XCTAssertEqual(after.sessions.count, 3)
+        XCTAssertEqual(after.days.first?.asleepDuration, 8.5 * 3600)
         XCTAssertEqual(nap.average(after.heartRate), 55)
         XCTAssertEqual(nap.average(after.respiratoryRate), 13)
     }
 
-    func testMainSleepTieIsStableAndSinglePeriodIsNotAlsoANap() {
+    func testDailyTimelineIsStableAndDuplicateSegmentsDoNotInflateTotals() throws {
         let day = Calendar.current.startOfDay(for: origin)
         let first = SleepNight(day: day, segments: [segment(0, 1, .core)])
         let second = SleepNight(day: day, segments: [segment(6, 7, .core)])
-        XCTAssertEqual(SleepMeasurements(sessions: [first, second]).nights.first?.id, first.id)
-        XCTAssertEqual(SleepMeasurements(sessions: [second, first]).nights.first?.id, first.id)
-        XCTAssertTrue(SleepMeasurements(sessions: [first]).naps.isEmpty)
+        let forward = try XCTUnwrap(SleepMeasurements(sessions: [first, second, first]).days.first)
+        let reversed = try XCTUnwrap(SleepMeasurements(sessions: [second, first]).days.first)
+        XCTAssertEqual(forward.segments, reversed.segments)
+        XCTAssertEqual(forward.asleepDuration, 2 * 3600)
+        XCTAssertEqual(SleepMeasurements(sessions: [first]).days.first?.segments, first.segments)
+    }
+
+    func testWeeklySummariesKeepAllSleepOnEachWakeDate() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let day = calendar.startOfDay(for: origin)
+        let periods = (0..<7).flatMap { offset in
+            let wakeDay = calendar.date(byAdding: .day, value: offset, to: day)!
+            return [(-1.0, 6.0), (14.0, 15.0)].map { start, end in
+                SleepSegment(start: wakeDay.addingTimeInterval(start * 3600),
+                             end: wakeDay.addingTimeInterval(end * 3600), stage: .core)
+            }
+        }
+        let days = SleepSummary.nights(periods, calendar: calendar)
+        XCTAssertEqual(days.count, 7)
+        XCTAssertEqual(days.map(\.asleepDuration), Array(repeating: 8 * 3600, count: 7))
+        XCTAssertEqual(days.reduce(0) { $0 + $1.asleepDuration }, 56 * 3600)
     }
 
     func testDaylightSavingUsesElapsedDuration() throws {
@@ -115,6 +148,11 @@ final class SleepTests: XCTestCase {
         let night = try XCTUnwrap(SleepSummary.nights([SleepSegment(start: start, end: end, stage: .asleep)], calendar: calendar).first)
         XCTAssertEqual(night.asleepDuration, 9 * 3_600)
         XCTAssertEqual(calendar.component(.day, from: night.day), 1)
+        let napStart = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-11-01T14:00:00-08:00"))
+        let nap = SleepNight(day: night.day, segments: [SleepSegment(start: napStart, end: napStart.addingTimeInterval(3600), stage: .core)])
+        let combined = try XCTUnwrap(SleepMeasurements(sessions: [night, nap]).days.first)
+        XCTAssertEqual(combined.asleepDuration, 10 * 3600)
+        XCTAssertNil(combined.stage(at: end.addingTimeInterval(3600)))
     }
 
     func testInvalidAndOnlyAwakeRecordsDoNotProduceSleep() {
@@ -131,10 +169,10 @@ final class SleepTests: XCTestCase {
         let health = SleepNight(day: direct.day, segments: [segment(-1, 9, .rem)])
         let result = SleepSummary.combined(helio: SleepMeasurements(sessions: [direct]),
                                            health: [SleepMeasurements(sessions: [health])])
-        XCTAssertEqual(result.nights.count, 1)
-        XCTAssertEqual(result.nights[0].segments, direct.segments)
-        XCTAssertEqual(result.nights[0].asleepDuration, 7 * 3_600)
-        XCTAssertNil(result.nights[0].stage(at: origin.addingTimeInterval(2.5 * 3_600)))
+        XCTAssertEqual(result.days.count, 1)
+        XCTAssertEqual(result.days[0].segments, direct.segments)
+        XCTAssertEqual(result.days[0].asleepDuration, 7 * 3_600)
+        XCTAssertNil(result.days[0].stage(at: origin.addingTimeInterval(2.5 * 3_600)))
     }
 
     func testHealthFillsMissingDatesAndHelioReplacesFallbackAfterSync() throws {
@@ -142,11 +180,11 @@ final class SleepTests: XCTestCase {
         let second = try XCTUnwrap(SleepSummary.nights([segment(24, 32, .core)]).first)
         let fallback = SleepMeasurements(sessions: [first, second])
         let missing = SleepSummary.combined(helio: SleepMeasurements(sessions: [second]), health: [fallback])
-        XCTAssertEqual(missing.nights.map(\.day), [first.day, second.day])
+        XCTAssertEqual(missing.days.map(\.day), [first.day, second.day])
         let synced = SleepNight(day: first.day, segments: [segment(1, 7, .rem)])
         let result = SleepSummary.combined(helio: SleepMeasurements(sessions: [synced, second]), health: [fallback])
-        XCTAssertEqual(result.nights.count, 2)
-        XCTAssertEqual(result.nights[0].segments, synced.segments)
+        XCTAssertEqual(result.days.count, 2)
+        XCTAssertEqual(result.days[0].segments, synced.segments)
     }
 
     func testMetricsPreferHelioIndependentlyWithHealthReadingsWithoutHealthSleep() throws {
@@ -189,8 +227,8 @@ final class SleepTests: XCTestCase {
         let duplicate = SleepNight(day: night.day.addingTimeInterval(86_400), segments: [segment(1, 9, .core)])
         let result = SleepSummary.combined(helio: SleepMeasurements(sessions: [night]),
                                            health: [SleepMeasurements(sessions: [duplicate])])
-        XCTAssertEqual(result.nights.count, 1)
-        XCTAssertEqual(result.nights[0].day, night.day)
+        XCTAssertEqual(result.days.count, 1)
+        XCTAssertEqual(result.days[0].day, night.day)
     }
 
     func testHealthOnlyFallbackChoosesOneRecordingAndEmptyDataStaysEmpty() throws {
@@ -198,10 +236,10 @@ final class SleepTests: XCTestCase {
         let generic = SleepNight(day: night.day, segments: [segment(-1, 9, .asleep)])
         let result = SleepSummary.combined(helio: SleepMeasurements(),
                                            health: [SleepMeasurements(sessions: [generic]), SleepMeasurements(sessions: [night])])
-        XCTAssertEqual(result.nights.count, 1)
-        XCTAssertEqual(result.nights[0].segments, night.segments)
+        XCTAssertEqual(result.days.count, 1)
+        XCTAssertEqual(result.days[0].segments, night.segments)
         let empty = SleepSummary.combined(helio: SleepMeasurements(), health: [])
-        XCTAssertTrue(empty.nights.isEmpty)
+        XCTAssertTrue(empty.days.isEmpty)
         XCTAssertTrue(empty.heartRate.isEmpty)
         XCTAssertTrue(empty.respiratoryRate.isEmpty)
     }

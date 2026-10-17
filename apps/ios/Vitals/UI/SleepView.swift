@@ -20,9 +20,8 @@ struct SleepTab: View {
 
     var body: some View {
         let data = measurements
-        let night = data.nights.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
-        let naps = data.naps.filter { Calendar.current.isDate($0.day, inSameDayAs: date) }
-        let week = data.nights.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
+        let night = data.days.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
+        let week = data.days.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
         NavigationStack {
             VStack(spacing: 0) {
                 Picker("sleep view", selection: $period) {
@@ -48,7 +47,6 @@ struct SleepTab: View {
                             weeklyCharts(data, week: week)
                         } else if period == .daily, let night {
                             nightSummary(night)
-                            if !naps.isEmpty { napCards(naps, data: data) }
                             stageChart(night)
                             SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
                                           night: night, values: data.heartRate)
@@ -94,7 +92,7 @@ struct SleepTab: View {
                         "Helio is preferred for each sleep period, heart rate and breathing rate. Apple Health fills missing periods or metrics. overlapping recordings aren’t counted twice.",
                         "keep the strap nearby and close Zepp if it holds the Bluetooth connection. Motion leaves recordings on the band and stores its copy on this iPhone.",
                         "breathing rate is breaths per minute, not a breath-by-breath waveform. Motion doesn’t estimate hypopnea, diagnose breathing problems, or reproduce Zepp’s sleep scores.",
-                        "the longest sleep period ending on each date is shown as main sleep; other periods appear as naps. this grouping may differ from Zepp’s sleep plan. missing measurements stay blank. sleep totals exclude awake time. averages use samples recorded during measured sleep."
+                        "all sleep periods ending on the selected date share one timeline and total, including naps. gaps stay blank. sleep totals exclude awake time. averages use samples recorded during measured sleep."
                     ])
                 }.quietBackground()
             }
@@ -130,13 +128,13 @@ struct SleepTab: View {
         }
     }
 
-    private func nightSummary(_ night: SleepNight, identifier: String = "sleep-duration") -> some View {
+    private func nightSummary(_ night: SleepNight) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("time asleep").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                     Text(sleepDuration(night.asleepDuration)).font(VitalsStyle.live).minimumScaleFactor(0.6).lineLimit(1)
-                        .accessibilityIdentifier(identifier)
+                        .accessibilityIdentifier("sleep-duration")
                 }
                 Spacer()
                 Image(systemName: "moon.fill").font(.system(size: 32)).foregroundStyle(SleepStage.deep.tint)
@@ -181,7 +179,7 @@ struct SleepTab: View {
             }
             .chartYScale(domain: (night.hasStages ? [SleepStage.awake, .rem, .core, .deep] + (night.duration(.asleep) > 0 ? [.asleep] : []) : [.awake, .asleep]).map(\.label))
             .chartXScale(domain: night.start...night.end)
-            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour().minute()) } }
+            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour()) } }
             .chartXSelection(value: $selectedTime)
             .frame(height: 170)
             .accessibilityIdentifier("sleep-stages-chart")
@@ -192,52 +190,8 @@ struct SleepTab: View {
         }.sleepCard()
     }
 
-    private func napCards(_ naps: [SleepNight], data: SleepMeasurements) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("naps").font(VitalsStyle.heading)
-            ForEach(naps) { nap in
-                NavigationLink {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            nightSummary(nap, identifier: "nap-detail-duration")
-                            stageChart(nap)
-                            SleepRateCard(title: "sleep heart rate", unit: "bpm", color: VitalsStyle.heart,
-                                          night: nap, values: data.heartRate)
-                            SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
-                                          night: nap, values: data.respiratoryRate)
-                        }.padding(VitalsStyle.gutter)
-                    }
-                    .vitalsScreen().vitalsTitle("nap")
-                    .onAppear { selectedTime = nil }
-                    .onDisappear { selectedTime = nil }
-                } label: {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text(sleepDuration(nap.asleepDuration)).font(VitalsStyle.entry)
-                                .accessibilityIdentifier("sleep-nap-duration")
-                            Spacer()
-                            Image(systemName: "chevron.right").foregroundStyle(VitalsStyle.secondary)
-                        }
-                        Text("\(nap.start.formatted(date: .omitted, time: .shortened)) – \(nap.end.formatted(date: .omitted, time: .shortened))")
-                            .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                        Chart(nap.segments) { segment in
-                            RectangleMark(xStart: .value("start", segment.start), xEnd: .value("end", segment.end),
-                                          yStart: .value("bottom", 0), yEnd: .value("top", 1))
-                                .foregroundStyle(segment.stage.tint)
-                        }
-                        .chartXScale(domain: nap.start...nap.end)
-                        .chartXAxis(.hidden).chartYAxis(.hidden).frame(height: 22)
-                        .accessibilityHidden(true)
-                    }.sleepCard()
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("sleep-nap")
-            }
-        }
-    }
-
     private func weeklyCharts(_ data: SleepMeasurements, week: [SleepNight]) -> some View {
-        let naps = data.naps.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
+        let sessions = data.sessions.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
         return VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(weekDomain.lowerBound.formatted(.dateTime.month(.abbreviated).day())) – \(date.formatted(.dateTime.month(.abbreviated).day()))")
@@ -261,26 +215,13 @@ struct SleepTab: View {
                 .chartXScale(domain: weekDomain)
                 .chartXAxis { AxisMarks(values: .stride(by: .day)) { AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true) } }
                 .chartYAxisLabel("hours").frame(height: 150)
+                .accessibilityIdentifier("sleep-weekly-duration-chart")
+                .accessibilityValue(week.map { "\($0.day.formatted(date: .abbreviated, time: .omitted)): \(sleepDuration($0.asleepDuration))" }.joined(separator: "; "))
             }.sleepCard()
-            if !naps.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("naps").font(VitalsStyle.heading).accessibilityIdentifier("sleep-weekly-naps")
-                    Text("\(naps.count) \(naps.count == 1 ? "nap" : "naps") · \(sleepDuration(naps.reduce(0) { $0 + $1.asleepDuration }))")
-                        .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                    Chart(naps) { nap in
-                        BarMark(x: .value("date", nap.day, unit: .day), y: .value("minutes", nap.asleepDuration / 60))
-                            .foregroundStyle(SleepStage.rem.tint)
-                            .accessibilityLabel("\(nap.day.formatted(date: .abbreviated, time: .omitted)), nap, \(sleepDuration(nap.asleepDuration))")
-                    }
-                    .chartXScale(domain: weekDomain)
-                    .chartXAxis { AxisMarks(values: .stride(by: .day)) { AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true) } }
-                    .chartYAxisLabel("minutes").frame(height: 130)
-                }.sleepCard()
-            }
             VStack(alignment: .leading, spacing: 12) {
                 Text("sleep schedule").font(VitalsStyle.heading)
                 Text("bedtime → wake time").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
-                Chart(week) { night in
+                Chart(sessions) { night in
                     RectangleMark(x: .value("date", night.day, unit: .day),
                                   yStart: .value("bedtime", clockHour(night.start, relativeTo: night.day)),
                                   yEnd: .value("wake time", clockHour(night.end, relativeTo: night.day)), width: .ratio(0.5))
@@ -364,7 +305,7 @@ private struct SleepRateCard: View {
                 }
             }
             if points.isEmpty {
-                Text("no measurements recorded for this sleep period.")
+                Text("no measurements recorded during sleep.")
                     .font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
             } else {
                 Chart {
@@ -376,7 +317,7 @@ private struct SleepRateCard: View {
                 }
                 .chartXScale(domain: night.start...night.end)
                 .chartYScale(domain: sleepRateDomain(points.map(\.value)))
-                .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour().minute()) } }
+                .chartXAxis { AxisMarks(values: .automatic(desiredCount: 3)) { AxisValueLabel(format: .dateTime.hour()) } }
                 .chartXSelection(value: $selectedTime).frame(height: 130)
                 if let time = selectedTime, let point = points.min(by: { abs($0.date.timeIntervalSince(time)) < abs($1.date.timeIntervalSince(time)) }) {
                     Text("\(point.date.formatted(date: .omitted, time: .shortened)) · \(point.value.formatted(.number.precision(.fractionLength(0...1)))) \(unit)")

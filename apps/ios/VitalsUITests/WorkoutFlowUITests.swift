@@ -34,7 +34,7 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["sleep-duration"].label, "7h 42m")
     }
 
-    @MainActor func testNapIsVisibleAlongsideDaytimeSleepAndInWeeklyView() {
+    @MainActor func testAllSleepPeriodsShareOneTimelineAndDailyTotal() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing", "-ui-testing-sleep", "-ui-testing-naps"]
@@ -42,20 +42,24 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
         app.buttons["tab-sleep"].tap()
         XCTAssertTrue(app.staticTexts["sleep-duration"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "2h 10m")
-        let nap = app.buttons["sleep-nap"]
-        if !nap.isHittable { app.swipeUp() }
-        XCTAssertEqual(app.staticTexts["sleep-nap-duration"].label, "1h 37m")
-        capture(app, "main sleep and separate nap")
-        nap.tap()
-        XCTAssertTrue(app.staticTexts["nap-detail-duration"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["nap-detail-duration"].label, "1h 37m")
-        capture(app, "nap stages and duration")
-        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertEqual(app.staticTexts["sleep-duration"].label, "3h 47m")
+        XCTAssertFalse(app.buttons["sleep-nap"].exists)
+        XCTAssertFalse(app.staticTexts["naps"].exists)
+        capture(app, "combined sleep total")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).press(forDuration: 0.05,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        XCTAssertTrue(app.otherElements["sleep-stages-chart"].firstMatch.exists)
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "sleep stages")).count, 1)
+        capture(app, "combined sleep timeline with gap")
         app.segmentedControls["sleep-period"].buttons["weekly"].tap()
-        XCTAssertTrue(app.staticTexts["sleep-weekly-naps"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["1 nap · 1h 37m"].exists)
-        capture(app, "weekly naps")
+        let chart = app.otherElements["sleep-weekly-duration-chart"].firstMatch
+        XCTAssertTrue(chart.waitForExistence(timeout: 5))
+        XCTAssertTrue((chart.value as? String)?.contains("3h 47m") == true)
+        XCTAssertFalse(app.staticTexts["sleep-weekly-naps"].exists)
+        XCTAssertFalse(app.staticTexts["naps"].exists)
+        capture(app, "weekly combined sleep totals")
+        app.swipeUp()
+        capture(app, "weekly schedule keeps gaps between periods")
     }
 
     @MainActor func testStrapSyncIsBesideSettingsAndSetupOnlyManagesKey() {

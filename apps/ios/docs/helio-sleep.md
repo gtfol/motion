@@ -4,13 +4,14 @@ Motion reads the Helio Strap's stored history over Bluetooth. Zepp's cloud API a
 Apple Health are not in this path. The single Sleep view prefers Helio data, with
 optional Apple Health access filling missing sleep periods or metrics.
 
-Sleep opens in **daily**, with the selected date's main sleep plus separate **naps**.
-Each nap opens its duration, stages, heart rate and breathing. **Weekly** contains
-the seven-day main-sleep duration, nap totals, schedule and rate charts ending on
-the selected date. Its arrows move seven days at a time, up to today. Switching views
-keeps the selected date; both support pull-to-refresh.
-The longest period ending on a date is main sleep; other periods are naps. This is
-Motion's display grouping, not a claim to reproduce Zepp's sleep-plan classification.
+Sleep opens in **daily**, with every sleep period ending on the selected date combined
+into one total, stage timeline, and heart/breathing chart, including naps. The chart
+retains each period's actual times and leaves gaps between periods empty; awake time
+and gaps do not count toward the sleep total or asleep averages. **Weekly** uses the
+same combined daily totals and averages. Its schedule shows every recorded period
+without filling the time between them. There is no separate nap card or nap total.
+The weekly arrows move seven days at a time, up to today. Switching views keeps the
+selected date; both support pull-to-refresh.
 Explicit Helio record boundaries are retained, even when sessions are close together.
 Health stage samples have no session IDs; gaps over one hour separate their periods.
 
@@ -40,7 +41,7 @@ No source picker is needed. A Helio sleep record wins for overlapping sleep peri
 Motion selects a Health recording, preferring stages and then sleep coverage. A
 separate Health nap on the same date can fill a gap without duplicating the main sleep.
 Overlapping recordings, including duplicates assigned to neighboring dates, are not
-added together. Stages from different recorders are never spliced into one night.
+added together. Overlapping stages from different recorders are never spliced; selected nonoverlapping periods share the daily timeline.
 For each sleep period's heart rate and breathing rate separately, Helio wins if it has
 usable asleep readings; otherwise Health supplies that metric. Health readings can
 fill a Helio night even when Health has no sleep-stage record. Each metric keeps
@@ -117,7 +118,7 @@ their device:
   samples against the same recorded night in Zepp. The upstream protocol's sleep
   minute-reference formula is inferred; verify timestamps, including time-zone/DST
   transitions, against a real capture before claiming accuracy.
-- [ ] Compare both main sleep and a separate nap with Zepp, including a nap before daytime main sleep.
+- [ ] Compare all sleep periods with Zepp, including a nap before daytime sleep; verify the combined total and empty gap on the timeline.
 - [ ] Reopen and repeat sync: no duplicates; an amended night replaces its earlier version.
 - [ ] Check a workout's live heart-rate stream during a sleep fetch.
 - [ ] Move out of range, turn Bluetooth off/on, lock/unlock, then retry without data loss.

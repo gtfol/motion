@@ -45,7 +45,7 @@ struct SleepReading: Identifiable, Codable, Sendable {
 }
 
 struct SleepNight: Identifiable, Sendable {
-    /// One sleep period, assigned to its wake date, including overnight sleep and naps.
+    /// Recorded sleep assigned to its wake date, either one period or a full day's timeline.
     let day: Date
     let segments: [SleepSegment]
     var id: Date { start }
@@ -66,9 +66,8 @@ struct SleepNight: Identifiable, Sendable {
     func readings(_ values: [SleepReading], asleepOnly: Bool = false) -> [SleepReading] {
         values.filter { point in
             guard point.value.isFinite, point.value > 0, point.date >= start, point.date < end else { return false }
-            guard asleepOnly else { return true }
             guard let stage = stage(at: point.date) else { return false }
-            return stage != .awake
+            return !asleepOnly || stage != .awake
         }.sorted { $0.date < $1.date }
     }
 
@@ -83,12 +82,7 @@ struct SleepMeasurements: Sendable {
     var heartRate: [SleepReading] = []
     var respiratoryRate: [SleepReading] = []
 
-    var nights: [SleepNight] { SleepSummary.mainSessions(sessions) }
-    var naps: [SleepNight] {
-        let mainIDs = Set(nights.map(\.id))
-        return sessions.filter { !$0.segments.isEmpty && $0.asleepDuration > 0 && !mainIDs.contains($0.id) }
-            .sorted { $0.start < $1.start }
-    }
+    var days: [SleepNight] { SleepSummary.dailySummaries(sessions) }
 }
 
 enum SleepSummary {
@@ -165,20 +159,16 @@ enum SleepSummary {
         return result
     }
 
-    /// Main sleep and naps remain distinct; only the longest period goes in the main sleep charts.
+    /// Include every sleep period ending on each date, leaving unrecorded intervals empty.
     static func nights(_ input: [SleepSegment], calendar: Calendar = .current) -> [SleepNight] {
-        mainSessions(sessions(input, calendar: calendar))
+        dailySummaries(sessions(input, calendar: calendar))
     }
 
-    static func mainSessions(_ sessions: [SleepNight]) -> [SleepNight] {
-        var byDay: [Date: SleepNight] = [:]
-        for session in sessions where !session.segments.isEmpty && session.asleepDuration > 0 {
-            if let current = byDay[session.day],
-               current.asleepDuration > session.asleepDuration ||
-                (current.asleepDuration == session.asleepDuration && current.start <= session.start) { continue }
-            byDay[session.day] = session
-        }
-        return byDay.values.sorted { $0.day < $1.day }
+    static func dailySummaries(_ sessions: [SleepNight]) -> [SleepNight] {
+        let valid = sessions.filter { !$0.segments.isEmpty && $0.asleepDuration > 0 }
+        return Dictionary(grouping: valid, by: \.day).map { day, periods in
+            SleepNight(day: day, segments: normalized(periods.flatMap(\.segments)))
+        }.sorted { $0.day < $1.day }
     }
 
     /// Health provides stage samples without session IDs. Group nearby stages, retaining every period.
