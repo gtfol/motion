@@ -8,11 +8,11 @@ Native SwiftUI + SwiftData, iOS 17+, iPhone only. SwiftUI, SwiftData, Charts, Co
 
 From `apps/ios`:
 
-1. Open `Vitals.xcodeproj` in Xcode 26.6 or newer and select the **Vitals** scheme.
-2. Choose an iPhone simulator, or a physical iPhone for Bluetooth and HealthKit. For a device, pick your team under Signing & Capabilities. The HealthKit capability comes from `Vitals/Vitals.entitlements`.
+1. Open `Motion.xcodeproj` in Xcode 26.6 or newer and select the **Motion** scheme.
+2. Choose an iPhone simulator, or a physical iPhone for Bluetooth and HealthKit. For a device, pick your team under Signing & Capabilities. The HealthKit capability comes from `Motion/Motion.entitlements`.
 3. Run.
 
-The App Store name is **motion: your fitness companion**; the iPhone name is **motion**. The registered bundle identifier remains `dev.gtfol.vitals` so TestFlight updates preserve the existing app and its data. The Xcode target and source folders still use `Vitals` internally. Keep the local store path, schema names, and HealthKit sync identifiers stable across the rebrand. The complete generated project is committed; no generation step is needed to build.
+The App Store name is **motion: your fitness companion**; the iPhone name is **motion**. The registered bundle identifier remains `dev.gtfol.vitals` so TestFlight updates preserve the existing app and its data. The Xcode project, targets, scheme and source folders use `Motion`. The internal Swift module remains `Vitals` to preserve SwiftData model identity; keep it, the local store path, schema names, Keychain services, authentication callback and HealthKit sync identifiers stable across the rebrand. The complete generated project is committed; no generation step is needed to build.
 
 ## The workout flow
 
@@ -33,7 +33,7 @@ Loads are stored in kilograms (`WeightUnit.kilograms(fromDisplayed:)`, 1 lb = 0.
 - **Records** are computed from the persisted log every time, so editing or deleting a set updates them. Two kinds: heaviest completed working-set load, and best Epley estimated 1RM (load × (1 + reps/30) for 2–10 reps; a single is its own estimate). A first weighted session sets a baseline rather than a record; ties are not records; only the session's best set is marked.
 - **Bodyweight exercises** (a flag on the exercise) are tracked and shown in history but not compared for records, including sets with added load, until added-load semantics are designed. Zero-load sets on any exercise are never compared.
 
-These live in `Vitals/Core`, which is plain Foundation and has its own tests.
+These live in `Motion/Core`, which is plain Foundation and has its own tests.
 
 ## Helio Strap over Bluetooth
 
@@ -80,7 +80,7 @@ Routines and sessions are never linked by a relationship: starting a routine cop
 
 ## Design
 
-motion follows gtfol's design standard ([gtfol/ai DESIGN.md](https://github.com/gtfol/ai/blob/d42dc2ed9964fef2f2aa95149783fcaa58026e82/DESIGN.md)), which is based on freewrite and capsule, and capsule's iPhone app. It's a written standard with starting color values, not a published token package. motion uses its dark column: black canvas, #eeeeee text, #aaaaaa secondary text, #2c2c2c dividers, and #d4b26a/#ef9696 for caution. Lato Regular is bundled under the [SIL Open Font License](Vitals/Resources/Lato-OFL.txt) with Dynamic Type, as in capsule and freewrite; its figures are tabular, so changing numbers don't shift. Copy is lowercase, with other companies' product names capitalized as capsule does.
+motion follows gtfol's design standard ([gtfol/ai DESIGN.md](https://github.com/gtfol/ai/blob/d42dc2ed9964fef2f2aa95149783fcaa58026e82/DESIGN.md)), which is based on freewrite and capsule, and capsule's iPhone app. It's a written standard with starting color values, not a published token package. motion uses its dark column: black canvas, #eeeeee text, #aaaaaa secondary text, #2c2c2c dividers, and #d4b26a/#ef9696 for caution. Lato Regular is bundled under the [SIL Open Font License](Motion/Resources/Lato-OFL.txt) with Dynamic Type, as in capsule and freewrite; its figures are tabular, so changing numbers don't shift. Copy is lowercase, with other companies' product names capitalized as capsule does.
 
 From capsule and freewrite: the quiet text bottom navigation (train · history · sleep · settings), inline titles, open sections without cards, 20 pt gutters, 44 pt touch targets, capsule's 2 pt-radius primary button and information popovers, and freewrite's timestamp-based timer. motion' own additions, documented as such: larger numeric sizes for live BPM (56 pt) and set entry (20 pt), and an approximate-zone tint that only colors zones 4 and 5 and always writes the zone out. motion is dark-only, like capsule. See [design notes](docs/design.md) for what was taken from capsule and what wasn't.
 
@@ -94,18 +94,18 @@ swift test --package-path Packages/HelioProtocol # Bluetooth protocol tests on m
 scripts/test-ios.sh        # simulator and device builds, then XCTest on an iPhone simulator (needs Xcode)
 ```
 
-`swift test` runs the Foundation-only tests, including sleep interval calculations, against `Vitals/Core` through `Package.swift`. The Xcode test target adds SwiftData persistence and coordinator tests (reopening an on-disk store, routine copies, delete rules, records after edits, relaunch recovery, export retry). `VitalsUITests` drives the real interface through a strength workout (start, add exercises, type loads and reps, complete sets, rest, finish, history, switch to kg, exercise history) and keeps a screenshot of each screen. In debug builds, the `-ui-testing` launch argument gives it a throwaway store, no Bluetooth, and Apple Health reported as unavailable so no permission sheet appears. GitHub Actions runs all of it on macOS, uploads the screenshots, and checks that the committed project matches the generator.
+`swift test` runs the Foundation-only tests, including sleep interval calculations, against `Motion/Core` through `Package.swift`. The Xcode test target adds SwiftData persistence and coordinator tests (reopening an on-disk store, routine copies, delete rules, records after edits, relaunch recovery, export retry). `MotionUITests` drives the real interface through a strength workout (start, add exercises, type loads and reps, complete sets, rest, finish, history, switch to kg, exercise history) and keeps a screenshot of each screen. In debug builds, the `-ui-testing` launch argument gives it a throwaway store, no Bluetooth, and Apple Health reported as unavailable so no permission sheet appears. GitHub Actions runs all of it on macOS, uploads the screenshots, and checks that the committed project matches the generator.
 
 None of it exercises a real strap, Bluetooth background behavior or real HealthKit writes. The device checklist is in [docs/verification.md](docs/verification.md).
 
 ## Project layout
 
-- `Vitals/Core`: units, set math, records, heart-rate parsing and statistics, rest timer, session and export values. Foundation only.
-- `Vitals/Persistence`: SwiftData models, schema, and `WorkoutStore`, the only place that changes the log.
-- `Vitals/Services`: `HeartRateMonitor` (CoreBluetooth), `HealthKitExporter` (HealthKit), and `SessionCoordinator`, which ties logging, the strap and Health together.
-- `Vitals/UI`: train, history, sleep, settings, and shared style.
-- `VitalsTests`: core, persistence and coordinator tests. `VitalsUITests`: the workout flow with screenshots.
+- `Motion/Core`: units, set math, records, heart-rate parsing and statistics, rest timer, session and export values. Foundation only.
+- `Motion/Persistence`: SwiftData models, schema, and `WorkoutStore`, the only place that changes the log.
+- `Motion/Services`: `HeartRateMonitor` (CoreBluetooth), `HealthKitExporter` (HealthKit), and `SessionCoordinator`, which ties logging, the strap and Health together.
+- `Motion/UI`: train, history, sleep, settings, and shared style.
+- `MotionTests`: core, persistence and coordinator tests. `MotionUITests`: the workout flow with screenshots.
 - `scripts/generate-project.py`: standard-library-only project generator, adapted from capsule's.
-- `Vitals/Assets.xcassets/AppIcon.appiconset/AppIcon.png`: the approved runner illustration, committed as an opaque 1024 × 1024 app icon. Xcode generates the smaller sizes from this asset.
+- `Motion/Assets.xcassets/AppIcon.appiconset/AppIcon.png`: the approved runner illustration, committed as an opaque 1024 × 1024 app icon. Xcode generates the smaller sizes from this asset.
 
 Out of scope for v1: Zepp cloud sync, continuous background sleep-sync guarantees, hypopnea and sleep scoring, HRV and recovery, GPS and routes, Apple Watch app, nutrition, program builders, plate math, RPE, notifications, widgets.

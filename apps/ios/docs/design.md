@@ -40,7 +40,7 @@ From freewrite: a clock computed from timestamps (its session timer uses a deadl
 
 The approved icon is a running pictogram inspired by Japanese public-transport signage: a round off-white head, broad sage limbs and shallow teal edges on charcoal. Its forward stride represents motion across the app's activities. Allen selected this illustration on October 1, 2026, replacing the lowercase lettermark. The icon's restrained palette is independent of the interface's semantic colors.
 
-The artwork is committed directly as an opaque 1024 × 1024 PNG in `Vitals/Assets.xcassets/AppIcon.appiconset`. Keep the square canvas intact; iOS applies its own corner mask. The old lettermark generator was removed so it cannot overwrite the selected illustration.
+The artwork is committed directly as an opaque 1024 × 1024 PNG in `Motion/Assets.xcassets/AppIcon.appiconset`. Keep the square canvas intact; iOS applies its own corner mask. The old lettermark generator was removed so it cannot overwrite the selected illustration.
 
 ## motion' own choices
 
