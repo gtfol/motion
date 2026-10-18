@@ -13,6 +13,7 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "sleep-initial-loading").firstMatch.waitForExistence(timeout: 3))
         let total = app.staticTexts["sleep-duration"]
         XCTAssertFalse(total.exists, "do not show the cached six-hour strap record while the nap is loading")
+        app.buttons["complete-test-sleep-read"].tap()
         XCTAssertTrue(total.waitForExistence(timeout: 8))
         XCTAssertEqual(total.label, "8h 0m")
         capture(app, "complete sleep and nap total")
@@ -21,6 +22,7 @@ final class WorkoutFlowUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "sleep-refreshing").firstMatch.waitForExistence(timeout: 2))
         XCTAssertEqual(total.label, "8h 0m", "reopening must keep the full total during the delayed refresh")
         capture(app, "stable total while refreshing")
+        app.buttons["complete-test-sleep-read"].tap()
         let finished = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
             object: app.descendants(matching: .any).matching(identifier: "sleep-refreshing").firstMatch)
         XCTAssertEqual(XCTWaiter.wait(for: [finished], timeout: 8), .completed)
@@ -28,6 +30,7 @@ final class WorkoutFlowUITests: XCTestCase {
         app.buttons["sleep-previous"].tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "sleep-initial-loading").firstMatch.waitForExistence(timeout: 2))
         XCTAssertFalse(total.exists, "the previous date must not borrow the last date's total")
+        app.buttons["complete-test-sleep-read"].tap()
         XCTAssertTrue(total.waitForExistence(timeout: 8))
         XCTAssertEqual(total.label, "8h 0m")
     }

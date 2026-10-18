@@ -44,6 +44,12 @@ struct SleepTab: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         datePicker
+                        #if DEBUG
+                        if health.usesControlledTestRead && health.loading {
+                            Button("complete test read") { health.finishTestRead() }
+                                .accessibilityIdentifier("complete-test-sleep-read")
+                        }
+                        #endif
                         if refreshing && ready {
                             HStack(spacing: 10) {
                                 ProgressView()

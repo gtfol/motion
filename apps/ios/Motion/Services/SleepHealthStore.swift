@@ -35,6 +35,18 @@ import Observation
     @ObservationIgnored private let authorization: SleepHealthAuthorization
     @ObservationIgnored private let reader: (@MainActor (Date) async -> LoadResult)?
     @ObservationIgnored private var generation = UUID()
+    #if DEBUG
+    @ObservationIgnored private var testReadContinuations: [CheckedContinuation<Void, Never>] = []
+    var usesControlledTestRead: Bool {
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("-ui-testing") && args.contains("-ui-testing-sleep-loading")
+    }
+    func finishTestRead() {
+        let pending = testReadContinuations
+        testReadContinuations = []
+        pending.forEach { $0.resume() }
+    }
+    #endif
 
     init(authorization: SleepHealthAuthorization? = nil, reader: (@MainActor (Date) async -> LoadResult)? = nil) {
         let store = HKHealthStore()
@@ -98,7 +110,7 @@ import Observation
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if usesTestMeasurements || (args.contains("-ui-testing") && args.contains("-ui-testing-sleep-access")) {
-            if args.contains("-ui-testing-sleep-loading") { try? await Task.sleep(for: .seconds(8)) }
+            if usesControlledTestRead { await withCheckedContinuation { testReadContinuations.append($0) } }
             return LoadResult(records: testMeasurements(endingOn: date))
         }
         #endif
