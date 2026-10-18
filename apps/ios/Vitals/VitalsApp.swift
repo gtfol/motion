@@ -233,6 +233,16 @@ struct UnavailableHealthExporter: WorkoutExporting {
         #else
         helio = HelioSleepSync(directory: directory)
         #endif
+        #if DEBUG
+        if testStrap, ProcessInfo.processInfo.arguments.contains("-ui-testing-sleep-loading"), let strapID = preferences.strapID {
+            let day = Calendar.current.startOfDay(for: Date.now)
+            var archive = HelioSleepArchive()
+            archive.sessions = [.init(timestamp: day, segments: [
+                SleepSegment(start: day, end: day.addingTimeInterval(6 * 3600), stage: .core)
+            ])]
+            try HelioSleepRepository(directory: directory).save(archive, strap: strapID)
+        }
+        #endif
         monitor.configureHelio(helio)
         #if DEBUG
         if testStrap { helio.requestConnection = {} } // UI fixture never touches Bluetooth or the Keychain.

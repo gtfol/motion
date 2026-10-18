@@ -21,17 +21,25 @@ import Observation
     enum ConnectionResult: Equatable {
         case requested, manageAccess, unavailable, failed
     }
+    struct LoadResult: Sendable {
+        var records: [SleepMeasurements] = []
+        var message: String?
+    }
     private(set) var records: [SleepMeasurements] = []
     private(set) var loading = false
+    private(set) var loadedDay: Date?
+    private(set) var revision = 0
     private(set) var message: String?
     var available: Bool { authorization.available() }
     @ObservationIgnored private let store: HKHealthStore
     @ObservationIgnored private let authorization: SleepHealthAuthorization
+    @ObservationIgnored private let reader: (@MainActor (Date) async -> LoadResult)?
     @ObservationIgnored private var generation = UUID()
 
-    init(authorization: SleepHealthAuthorization? = nil) {
+    init(authorization: SleepHealthAuthorization? = nil, reader: (@MainActor (Date) async -> LoadResult)? = nil) {
         let store = HKHealthStore()
         self.store = store
+        self.reader = reader
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if authorization == nil, args.contains("-ui-testing"), args.contains("-ui-testing-sleep-access") {
@@ -70,16 +78,31 @@ import Observation
         generation = request
         loading = true
         message = nil
-        // Clear old dates immediately, including on failures or revoked read access.
-        records = []
+        // Retain the last complete result during a refresh. An empty completed read still
+        // replaces it, including when Health access has been revoked.
         defer { if generation == request { loading = false } }
+        let result: LoadResult?
+        if let reader { result = await reader(date) }
+        else { result = await readMeasurements(endingOn: date, request: request) }
+        guard generation == request, !Task.isCancelled, let result else { return }
+        message = result.message
+        // A failed query is not a successful empty read. Keep the complete cached
+        // page for this date if Health is temporarily unavailable (for example, locked).
+        if result.message != nil, loadedDay == Calendar.current.startOfDay(for: date) { return }
+        records = result.records
+        loadedDay = Calendar.current.startOfDay(for: date)
+        revision += 1
+    }
+
+    private func readMeasurements(endingOn date: Date, request: UUID) async -> LoadResult? {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if usesTestMeasurements || (args.contains("-ui-testing") && args.contains("-ui-testing-sleep-access")) {
-            loadTestMeasurements(endingOn: date); return
+            if args.contains("-ui-testing-sleep-loading") { try? await Task.sleep(for: .seconds(8)) }
+            return LoadResult(records: testMeasurements(endingOn: date))
         }
         #endif
-        guard available else { message = "Apple Health isn’t available on this device."; return }
+        guard available else { return LoadResult(message: "Apple Health isn’t available on this device.") }
         let calendar = Calendar.current
         let day = calendar.startOfDay(for: date)
         let start = calendar.date(byAdding: .day, value: -8, to: day)!
@@ -91,7 +114,7 @@ import Observation
             let query = HKSampleQueryDescriptor(predicates: [.categorySample(type: HKCategoryType(.sleepAnalysis), predicate: predicate)],
                                                 sortDescriptors: [SortDescriptor(\HKCategorySample.startDate)])
             let samples = try await query.result(for: store)
-            guard generation == request else { return }
+            guard generation == request else { return nil }
             let usable = samples.filter { Self.stage($0.value) != nil && $0.endDate <= end }
             for (id, values) in Dictionary(grouping: usable, by: { $0.sourceRevision.source.bundleIdentifier }) {
                 bySource[id, default: SleepMeasurements()].sessions = SleepSummary.sessions(values.compactMap { sample in
@@ -104,12 +127,12 @@ import Observation
             (HKQuantityTypeIdentifier.heartRate, \SleepMeasurements.heartRate, "heart rate"),
             (.respiratoryRate, \SleepMeasurements.respiratoryRate, "breathing rate")
         ] {
-            guard generation == request else { return }
+            guard generation == request else { return nil }
             do {
                 let query = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HKQuantityType(type), predicate: predicate)],
                                                     sortDescriptors: [SortDescriptor(\HKQuantitySample.startDate)])
                 let samples = try await query.result(for: store)
-                guard generation == request else { return }
+                guard generation == request else { return nil }
                 for (id, values) in Dictionary(grouping: samples, by: { $0.sourceRevision.source.bundleIdentifier }) {
                     bySource[id, default: SleepMeasurements()][keyPath: key] = values.map {
                         SleepReading(id: $0.uuid, date: $0.startDate,
@@ -118,11 +141,12 @@ import Observation
                 }
             } catch { failures.append(label) }
         }
-        guard generation == request else { return }
-        records = bySource.keys.sorted().compactMap { bySource[$0] }
+        guard generation == request else { return nil }
+        var result = LoadResult(records: bySource.keys.sorted().compactMap { bySource[$0] })
         if !failures.isEmpty {
-            message = "couldn’t read \(failures.joined(separator: ", ")) from Apple Health. unlock your iPhone and pull down to retry."
+            result.message = "couldn’t read \(failures.joined(separator: ", ")) from Apple Health. unlock your iPhone and pull down to retry."
         }
+        return result
     }
 
     private static func stage(_ value: Int) -> SleepStage? {
@@ -137,9 +161,9 @@ import Observation
     }
 
     #if DEBUG
-    private func loadTestMeasurements(endingOn date: Date) {
+    private func testMeasurements(endingOn date: Date) -> [SleepMeasurements] {
         var measurements = SleepMeasurements()
-        if ProcessInfo.processInfo.arguments.contains("-ui-testing-sleep-empty") { return }
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing-sleep-empty") { return [] }
         let calendar = Calendar.current
         for offset in -6...0 where offset != -3 {
             let day = calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: date))!
@@ -169,7 +193,14 @@ import Observation
                 part(772, 850, .core), part(850, 851, .awake), part(851, 903, .rem)
             ])
         }
-        records = [measurements]
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing-sleep-loading") {
+            let day = calendar.startOfDay(for: date)
+            measurements.sessions = SleepSummary.sessions([
+                SleepSegment(start: day, end: day.addingTimeInterval(6 * 3600), stage: .core),
+                SleepSegment(start: day.addingTimeInterval(12 * 3600), end: day.addingTimeInterval(14 * 3600), stage: .core)
+            ])
+        }
+        return [measurements]
     }
     #endif
 }

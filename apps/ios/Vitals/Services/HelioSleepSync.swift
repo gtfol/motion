@@ -85,7 +85,7 @@ import Observation
             diagnosticDetails = issue.diagnosticDetails
             return // Synthetic failure without Bluetooth, Keychain or archive writes.
         }
-        if !force, args.contains("-ui-testing"), args.contains("-ui-testing-strap") { return }
+        if (!force || args.contains("-ui-testing-sleep-loading")), args.contains("-ui-testing"), args.contains("-ui-testing-strap") { return }
         #endif
         // Files/Keychain can be unavailable during a Bluetooth relaunch before first unlock.
         // Retry access when Motion is opened, without overwriting the unreadable archive.

@@ -3,6 +3,35 @@ import XCTest
 /// Drives the real interface through a strength workout on a fresh store, without a strap and with Apple Health
 /// unavailable, and keeps screenshots of each screen in the test results.
 final class WorkoutFlowUITests: XCTestCase {
+    @MainActor func testSleepWaitsForCombinedTotalAndKeepsItWhenReopeningTab() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-sleep", "-ui-testing-strap", "-ui-testing-sleep-loading"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-sleep"].waitForExistence(timeout: 15))
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "sleep-initial-loading").firstMatch.waitForExistence(timeout: 3))
+        let total = app.staticTexts["sleep-duration"]
+        XCTAssertFalse(total.exists, "do not show the cached six-hour strap record while the nap is loading")
+        XCTAssertTrue(total.waitForExistence(timeout: 8))
+        XCTAssertEqual(total.label, "8h 0m")
+        capture(app, "complete sleep and nap total")
+        app.buttons["tab-train"].tap()
+        app.buttons["tab-sleep"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "sleep-refreshing").firstMatch.waitForExistence(timeout: 2))
+        XCTAssertEqual(total.label, "8h 0m", "reopening must keep the full total during the delayed refresh")
+        capture(app, "stable total while refreshing")
+        let finished = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
+            object: app.descendants(matching: .any).matching(identifier: "sleep-refreshing").firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [finished], timeout: 8), .completed)
+        XCTAssertEqual(total.label, "8h 0m")
+        app.buttons["sleep-previous"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "sleep-initial-loading").firstMatch.waitForExistence(timeout: 2))
+        XCTAssertFalse(total.exists, "the previous date must not borrow the last date's total")
+        XCTAssertTrue(total.waitForExistence(timeout: 8))
+        XCTAssertEqual(total.label, "8h 0m")
+    }
+
     @MainActor func testSleepAccessRefreshesThenShowsManagementOnRepeatTap() {
         continueAfterFailure = false
         let app = XCUIApplication()

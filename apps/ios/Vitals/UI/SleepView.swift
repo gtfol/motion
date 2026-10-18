@@ -11,20 +11,22 @@ struct SleepTab: View {
     @State private var date = Calendar.current.startOfDay(for: Date.now)
     @State private var selectedTime: Date?
     @State private var showingSyncIssue = false
+    private struct Snapshot {
+        let day: Date
+        let strapID: UUID?
+        let measurements: SleepMeasurements
+    }
+    @State private var snapshot: Snapshot?
+    @State private var refreshID: UUID?
+    private var day: Date { Calendar.current.startOfDay(for: date) }
+    private var refreshing: Bool { refreshID != nil || helio.busy || health.loading }
     private var syncIssue: String? {
         let messages = [helio.message, health.message].compactMap { $0 }
         return messages.isEmpty ? nil : messages.joined(separator: "\n\n")
     }
-    private var measurements: SleepMeasurements {
-        SleepSummary.combined(
-            helio: SleepMeasurements(sessions: helio.archive.sleepSessions(endingOn: date),
-                                     heartRate: helio.archive.heartRate, respiratoryRate: helio.archive.respiratoryRate),
-            health: health.records
-        )
-    }
-
     var body: some View {
-        let data = measurements
+        let ready = snapshot?.day == day && snapshot?.strapID == helio.strapID
+        let data = ready ? snapshot!.measurements : SleepMeasurements()
         let night = data.days.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
         let week = data.days.filter { $0.day >= weekDomain.lowerBound && $0.day <= date }
         NavigationStack {
@@ -42,12 +44,13 @@ struct SleepTab: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         datePicker
-                        if helio.busy {
+                        if refreshing && ready {
                             HStack(spacing: 10) {
                                 ProgressView()
-                                Text(helio.status).font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
+                                Text("updating sleep…").font(VitalsStyle.caption).foregroundStyle(VitalsStyle.secondary)
                             }
-                        } else if syncIssue != nil {
+                            .accessibilityIdentifier("sleep-refreshing")
+                        } else if !refreshing && syncIssue != nil {
                             Button { showingSyncIssue = true } label: {
                                 Label("sync incomplete", systemImage: "exclamationmark.circle")
                                     .font(VitalsStyle.caption)
@@ -55,7 +58,10 @@ struct SleepTab: View {
                             .foregroundStyle(VitalsStyle.secondary)
                             .accessibilityIdentifier("sleep-sync-issue")
                         }
-                        if period == .weekly, !week.isEmpty {
+                        if !ready {
+                            ProgressView("loading sleep…").frame(maxWidth: .infinity)
+                                .accessibilityIdentifier("sleep-initial-loading")
+                        } else if period == .weekly, !week.isEmpty {
                             weeklyCharts(data, week: week)
                         } else if period == .daily, let night {
                             nightSummary(night)
@@ -64,8 +70,6 @@ struct SleepTab: View {
                                           night: night, values: data.heartRate)
                             SleepRateCard(title: "breathing rate", unit: "breaths/min", color: .cyan,
                                           night: night, values: data.respiratoryRate)
-                        } else if health.loading {
-                            ProgressView("loading sleep…").frame(maxWidth: .infinity)
                         } else {
                             VStack(alignment: .leading, spacing: 10) {
                                 Label(period == .daily ? "no sleep measurements for this date" : "no sleep measurements for this week",
@@ -111,6 +115,18 @@ struct SleepTab: View {
         }
         .onChange(of: active) { _, visible in if visible { Task { await reload() } } }
         .onChange(of: scenePhase) { _, phase in if phase == .active && active { Task { await reload() } } }
+        .onChange(of: helio.busy) { _, _ in publishSnapshot() }
+        .onChange(of: helio.revision) { _, _ in publishSnapshot() }
+        .onChange(of: health.loading) { _, _ in publishSnapshot() }
+        .onChange(of: health.revision) { _, _ in publishSnapshot() }
+        .onChange(of: helio.strapID) { _, _ in
+            snapshot = nil
+            if active { Task { await reload() } }
+        }
+        .onChange(of: requested) { _, _ in
+            snapshot = nil
+            if active { Task { await reload() } }
+        }
     }
 
     private var datePicker: some View {
@@ -283,8 +299,23 @@ struct SleepTab: View {
                    Calendar.current.startOfDay(for: .now))
     }
     private func reload(force: Bool = false) async {
+        let request = UUID(), requestedDay = day
+        refreshID = request
         helio.sync(force: force)
-        if requested { await health.load(endingOn: date) }
+        if requested { await health.load(endingOn: requestedDay) }
+        guard refreshID == request else { return }
+        refreshID = nil
+        if day == requestedDay { publishSnapshot() }
+    }
+
+    /// A refresh can finish Health reads and multiple strap rounds in either order.
+    /// Keep the previous complete page until both settle; never publish a partial total.
+    private func publishSnapshot() {
+        guard !refreshing, !requested || health.loadedDay == day else { return }
+        snapshot = Snapshot(day: day, strapID: helio.strapID, measurements: SleepSummary.combined(
+            helio: SleepMeasurements(sessions: helio.archive.sleepSessions(endingOn: day),
+                                     heartRate: helio.archive.heartRate, respiratoryRate: helio.archive.respiratoryRate),
+            health: requested ? health.records : []))
     }
 
 }
