@@ -27,7 +27,7 @@ No migration runs during a web request or build. Missing configuration serves an
 
 ## Legal and contact links
 
-Motion links directly to [gtfol privacy](https://gtfol.dev/privacy) and [gtfol terms](https://gtfol.dev/terms). Use the shared privacy URL in App Store Connect as well. There is no separate Motion privacy page or redirect. Public support and contact email is `team@gtfol.dev`.
+Motion has its own [privacy policy](https://motion.gtfol.dev/privacy) and [terms](https://motion.gtfol.dev/terms), linked from the website footer. Use the Motion privacy URL in App Store Connect. Public support and contact email is `team@gtfol.dev`.
 
 ## Local verification
 
