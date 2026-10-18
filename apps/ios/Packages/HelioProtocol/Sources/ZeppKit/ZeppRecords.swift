@@ -277,10 +277,14 @@ public struct ZeppSleepSession: Equatable {
 
     public struct Stage: Equatable {
         public let start: Date
+        /// The final recorded minute, inclusive. Equal start/end is a one-minute stage.
         public let end: Date
         public let kind: StageKind
         public let rawStartMinute: UInt16
         public let rawEndMinute: UInt16
+
+        /// Boundary for duration calculations; keep `end` and the wire fields unchanged.
+        public var endExclusive: Date { end.addingTimeInterval(60) }
     }
 
     public let time: Date
@@ -300,11 +304,11 @@ public struct ZeppSleepSession: Equatable {
     public let totalDeepMinutes: UInt16
     public let totalAwakeMinutes: UInt16
 
-    /// Spans between consecutive stages that no stage covers (§6.6: use stage ends, flag gaps).
+    /// Spans between consecutive stages that no recorded minute covers.
     public var stageGaps: [ClosedRange<Date>] {
         var out = [ClosedRange<Date>]()
-        for (previous, next) in zip(stages, stages.dropFirst()) where next.start > previous.end {
-            out.append(previous.end...next.start)
+        for (previous, next) in zip(stages, stages.dropFirst()) where next.start > previous.endExclusive {
+            out.append(previous.endExclusive...next.start)
         }
         return out
     }

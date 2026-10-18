@@ -69,10 +69,14 @@ that account's band keys and local history. Signing out preserves its isolated c
   sleep round, each record is validated independently: valid sessions are saved even
   when another record is rejected, while the rejected record's old copy is kept.
   That sleep cursor does not advance, so a later sync can retry it. Unknown stages stay gaps.
-  Stage endpoints may overhang the declared session by at most one minute; these
-  edges are clipped to the session, never shifted or expanded. Larger discrepancies,
-  reversed intervals and overlaps still reject that record. This is a bounded
-  compatibility tolerance, not a hardware-confirmed explanation of the October 17 error.
+  Stage end minutes are inclusive: an equal start/end records one minute, not zero.
+  Motion converts them to exclusive boundaries for duration and chart calculations,
+  capped at the next stage's start and the session end. Raw minute fields are preserved.
+  Shared-boundary records remain nonoverlapping; genuine gaps and unknown stages
+  remain blank. Raw endpoints may overhang the declared session by at most one minute;
+  these edges are clipped. Larger discrepancies, reversed intervals, duplicate starts
+  and overlaps still reject that record. Retried records replace the old local copy;
+  existing archives are not blindly extended without rereading the strap.
 - A zero-stage sleep record is an expected empty record and does not reject other
   sessions in the same transfer. An overflowing stage table, invalid dates or invalid
   stage intervals reject that record without advancing the sleep cursor.
@@ -105,12 +109,14 @@ failure-path acknowledgement checks.
 ## Hardware validation still required
 
 Simulator tests establish the integration behavior, not real firmware compatibility.
-The October 17 device screenshots confirm authentication and a received sleep record,
-but stage-bounds validation rejected it. They do not expose the raw header or stage
-minute values, so the exact firmware mismatch is still unverified. Opening Zepp may
-populate the Health fallback; that does not verify direct sync. The one-minute edge
-tolerance and isolation of bad records are covered by synthetic wire tests; a completed
-real-device sync and timestamp comparison remain required.
+The October 17 device diagnostic reports start offset +222 minutes, end offset -235
+minutes and raw duration zero: a one-minute stage entirely inside the declared session.
+This reproduces the rejection exactly and corroborates the inclusive-end observations
+in [OpenCircuit issue 312](https://github.com/perezjuanj/OpenCircuit/issues/312).
+Synthetic wire tests cover that report, inclusive stage totals, real gaps, combined
+sleep/nap records, replay and archive preservation. A completed real-device sync with
+the fix and timestamp comparison remain required. Opening Zepp may populate the Health
+fallback; that does not verify direct sync.
 Before a public release, verify the following with the user's band key entered on
 their device:
 
