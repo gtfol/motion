@@ -249,7 +249,7 @@ struct SleepTab: View {
             }.sleepCard()
             VStack(alignment: .leading, spacing: 12) {
                 Text("sleep schedule").font(MotionStyle.heading)
-                Text("bedtime → wake time").font(MotionStyle.caption).foregroundStyle(MotionStyle.secondary)
+                Text("bedtime ↓ wake time").font(MotionStyle.caption).foregroundStyle(MotionStyle.secondary)
                 Chart(sessions) { night in
                     RectangleMark(x: .value("date", night.day, unit: .day),
                                   yStart: .value("bedtime", clockHour(night.start, relativeTo: night.day)),
@@ -258,11 +258,12 @@ struct SleepTab: View {
                         .accessibilityLabel("\(night.day.formatted(date: .abbreviated, time: .omitted)), \(night.start.formatted(date: .omitted, time: .shortened)) to \(night.end.formatted(date: .omitted, time: .shortened))")
                 }
                 .chartXScale(domain: weekDomain)
+                .chartYScale(domain: .automatic(includesZero: false, reversed: true))
                 .chartXAxis { AxisMarks(values: .stride(by: .day)) { AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true) } }
                 .chartYAxis {
                     AxisMarks { value in
                         AxisGridLine()
-                        AxisValueLabel { if let hour = value.as(Double.self) { Text(String(format: "%02d:00", (Int(hour) % 24 + 24) % 24)) } }
+                        AxisValueLabel { if let hour = value.as(Double.self) { Text(scheduleTime(hour)) } }
                     }
                 }.frame(height: 160)
             }.sleepCard()
@@ -298,6 +299,13 @@ struct SleepTab: View {
         let calendar = Calendar.current
         let offset = calendar.dateComponents([.day], from: day, to: calendar.startOfDay(for: time)).day ?? 0
         return Double(offset * 24 + calendar.component(.hour, from: time)) + Double(calendar.component(.minute, from: time)) / 60
+    }
+
+    private func scheduleTime(_ hour: Double) -> String {
+        let minutes = (Int((hour * 60).rounded()) % 1_440 + 1_440) % 1_440
+        let clockHour = minutes / 60
+        return String(format: "%d:%02d %@", clockHour % 12 == 0 ? 12 : clockHour % 12,
+                      minutes % 60, clockHour < 12 ? "AM" : "PM")
     }
 
     private func changeDay(_ amount: Int) {
