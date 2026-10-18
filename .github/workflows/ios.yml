@@ -44,7 +44,7 @@ jobs:
       - name: Verify generated Xcode project
         run: |
           python3 scripts/generate-project.py
-          git diff --exit-code -- Vitals.xcodeproj
+          git diff --exit-code -- Motion.xcodeproj
       - name: Build simulator and device, test on an iPhone simulator
         run: scripts/test-ios.sh
       - name: Export UI test screenshots

@@ -13,7 +13,7 @@ This repository follows [Capsule](https://github.com/gtfol/capsule)’s layout: 
 
 ## Development
 
-Open `apps/ios/Vitals.xcodeproj` in Xcode. For core tests, run `swift test --package-path apps/ios`.
+Open `apps/ios/Motion.xcodeproj` in Xcode. For core tests, run `swift test --package-path apps/ios`.
 
 For the web service, run `npm ci`, `npm run typecheck` and `npm run build` from `apps/web`. Database tests use a local disposable PostgreSQL database; see the web README. There is no root dependency install or shared JavaScript workspace.
 
@@ -23,4 +23,4 @@ GitHub Actions checks each app from its own directory. Vercel’s existing **mot
 
 Google sign-in goes through Motion’s web service. Account data is stored in the private `motion_backend` schema in Motion’s Supabase PostgreSQL project. The iPhone app remains usable offline; sleep and overnight strap measurements are currently stored locally.
 
-The registered iPhone bundle identifier remains `dev.gtfol.vitals`. Internal `Vitals` names, local stores, authentication callbacks and sync identifiers stay stable so existing installations keep their data.
+The registered iPhone bundle identifier remains `dev.gtfol.vitals`. The Xcode project, targets, scheme, source folders and core package use Motion. Compatibility identifiers (local stores, SwiftData model namespace/schema, authentication callbacks, Keychain services and HealthKit sync IDs) stay stable so existing installations keep their data and sign-in.
