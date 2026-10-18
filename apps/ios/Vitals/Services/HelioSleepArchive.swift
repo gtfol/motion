@@ -81,20 +81,27 @@ struct HelioSleepArchive: Codable {
             throw HelioTransferError.sleepDates
         }
         var segments: [SleepSegment] = []
+        var previousStart: Date?
         var previousEnd: Date?
-        for stage in record.stages {
+        for (index, stage) in record.stages.enumerated() {
             let boundsError = HelioTransferError.stageBounds(
                 startOffset: Int(stage.start.timeIntervalSince(record.sleepStart) / 60),
                 endOffset: Int(stage.end.timeIntervalSince(record.sleepEnd) / 60),
                 duration: Int(stage.end.timeIntervalSince(stage.start) / 60))
-            guard stage.end > stage.start else { throw boundsError }
+            guard stage.end >= stage.start else { throw boundsError }
+            if let previousStart, stage.start <= previousStart { throw HelioTransferError.stageOverlap }
             if let previousEnd, stage.start < previousEnd { throw HelioTransferError.stageOverlap }
+            previousStart = stage.start
             previousEnd = stage.end
             // The wire fields have minute precision. Accept a one-minute edge overhang by
             // intersecting with the declared session, never shifting or inventing sleep time.
             guard stage.start >= record.sleepStart.addingTimeInterval(-60),
                   stage.end <= record.sleepEnd.addingTimeInterval(60) else { throw boundsError }
-            let start = max(stage.start, record.sleepStart), end = min(stage.end, record.sleepEnd)
+            // The stage end names its final recorded minute; the session end is a boundary.
+            // Cap at the next start too, so shared-boundary records never double-count time.
+            let nextStart = record.stages.indices.contains(index + 1) ? record.stages[index + 1].start : record.sleepEnd
+            let start = max(stage.start, record.sleepStart)
+            let end = min(stage.endExclusive, nextStart, record.sleepEnd)
             guard end > start else {
                 if stage.kind == .awake { continue }
                 throw boundsError

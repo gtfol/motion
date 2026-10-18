@@ -101,6 +101,116 @@ final class HelioSleepTests: XCTestCase {
         return bytes
     }
 
+    /// Synthetic wire records use inclusive end minutes, independently of the decoder.
+    /// The totals corroborate this convention; no real health data or credentials are fixtures.
+    private func inclusiveSleepBytes(stages: [(UInt32, UInt32, UInt8)]) -> [UInt8] {
+        var bytes = sleepBytes()
+        bytes.replaceSubrange(0x56..<594, with: [UInt8](repeating: 0, count: 594 - 0x56))
+        bytes[0x54] = UInt8(stages.count)
+        var totals: [UInt8: UInt32] = [:]
+        for (index, stage) in stages.enumerated() {
+            let offset = 0x56 + index * 5
+            bytes.replaceSubrange(offset..<(offset + 5), with: le(stage.0, count: 2) + le(stage.1, count: 2) + [stage.2])
+            totals[stage.2, default: 0] += stage.1 - stage.0 + 1
+        }
+        let totalOffsets: [(UInt8, Int)] = [(8, 0x24a), (4, 0x24c), (5, 0x24e), (7, 0x250)]
+        for (kind, offset) in totalOffsets {
+            bytes.replaceSubrange(offset..<(offset + 2), with: le(totals[kind, default: 0], count: 2))
+        }
+        return bytes
+    }
+
+    @MainActor func testReportedZeroDurationStageInsideSessionIsOneRecordedMinute() throws {
+        let rig = rig(try directory())
+        // Recreates the reported offsets without retaining any real dates or raw packets:
+        // stage start - session start = 222; stage end - session end = -235; raw duration = 0.
+        var bytes = inclusiveSleepBytes(stages: [(1320, 1541, 4), (1542, 1542, 7), (1543, 1776, 8)])
+        bytes.replaceSubrange(0x0c..<0x0e, with: le(1777, count: 2))
+        rig.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), bytes)
+        rig.run()
+        XCTAssertNil(rig.sync.message, rig.sync.diagnosticDetails ?? "unexpected sync error")
+        XCTAssertEqual(rig.sync.archive.nights.first?.asleepDuration, 456 * 60)
+        XCTAssertEqual(rig.sync.archive.nights.first?.duration(.awake), 60)
+        XCTAssertNotNil(rig.sync.archive.cursors["72"])
+    }
+
+    @MainActor func testInclusiveOneMinuteStageSyncsWholeNightAndPersistsOnReplay() throws {
+        let directory = try directory(), rig = rig(directory)
+        let bytes = inclusiveSleepBytes(stages: [(1320, 1439, 5), (1440, 1440, 7),
+                                                (1441, 1559, 4), (1560, 1799, 8)])
+        rig.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), bytes)
+        installReadings(rig)
+        rig.run()
+        XCTAssertNil(rig.sync.message, "a one-minute stage is valid, not a zero-length record")
+        let night = try XCTUnwrap(rig.sync.archive.nights.first)
+        XCTAssertEqual(night.start, midnight.addingTimeInterval(-2 * 3600))
+        XCTAssertEqual(night.end, midnight.addingTimeInterval(6 * 3600))
+        XCTAssertEqual(night.asleepDuration, 479 * 60)
+        XCTAssertEqual(night.duration(.deep), 120 * 60)
+        XCTAssertEqual(night.duration(.core), 119 * 60)
+        XCTAssertEqual(night.duration(.rem), 240 * 60)
+        XCTAssertEqual(night.duration(.awake), 60)
+        XCTAssertEqual(night.segments.count, 4)
+        for (before, after) in zip(night.segments, night.segments.dropFirst()) {
+            XCTAssertEqual(before.end, after.start, "adjacent recorded minutes have no invented gap")
+        }
+        XCTAssertNotNil(rig.sync.archive.cursors["72"])
+        XCTAssertNotNil(rig.sync.archive.lastSync)
+        XCTAssertEqual(rig.sync.archive.heartRate.first?.value, 55)
+        XCTAssertEqual(rig.sync.archive.respiratoryRate.first?.value, 13)
+        rig.run()
+        let restored = self.rig(directory)
+        XCTAssertEqual(restored.sync.archive.sessions.count, 1)
+        XCTAssertEqual(restored.sync.archive.nights.first?.segments, night.segments)
+    }
+
+    @MainActor func testInclusiveSleepKeepsUnrecordedAndUnknownStageGaps() throws {
+        let rig = rig(try directory())
+        let bytes = inclusiveSleepBytes(stages: [(1320, 1379, 5), (1381, 1400, 0x02),
+                                                (1411, 1411, 4), (1440, 1799, 8)])
+        rig.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), bytes)
+        rig.run()
+        XCTAssertNil(rig.sync.message)
+        let segments = try XCTUnwrap(rig.sync.archive.nights.first).segments
+        XCTAssertEqual(segments.count, 3)
+        XCTAssertEqual(segments[0].end, midnight.addingTimeInterval(-60 * 60))
+        XCTAssertEqual(segments[1].start, midnight.addingTimeInterval(-29 * 60))
+        XCTAssertEqual(segments[1].end, midnight.addingTimeInterval(-28 * 60))
+        XCTAssertEqual(segments[2].start, midnight)
+        XCTAssertEqual(rig.sync.archive.nights.first?.asleepDuration, 421 * 60)
+    }
+
+    @MainActor func testInclusiveLastMinuteAndNapBothSurviveOneTransfer() throws {
+        let rig = rig(try directory())
+        let bytes = inclusiveSleepBytes(stages: [(1320, 1798, 4), (1799, 1799, 8)])
+        var nap = napBytes()
+        nap.replaceSubrange(0x58..<0x5a, with: le(1979, count: 2))
+        rig.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), bytes + nap)
+        rig.run()
+        XCTAssertNil(rig.sync.message)
+        XCTAssertEqual(rig.sync.archive.sessions.count, 2)
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let periods = rig.sync.archive.sleepSessions(endingOn: midnight, calendar: calendar)
+        let days = SleepSummary.dailySummaries(periods)
+        XCTAssertEqual(days.count, 1)
+        XCTAssertEqual(days.first?.asleepDuration, 540 * 60)
+        XCTAssertEqual(days.first?.duration(.rem), 60)
+    }
+
+    @MainActor func testDuplicateOneMinuteStagesStillRejectRecordAndKeepSavedCopy() throws {
+        let directory = try directory(), baseline = rig(directory)
+        installSleep(baseline); baseline.run()
+        let retry = rig(directory)
+        let bytes = inclusiveSleepBytes(stages: [(1320, 1439, 5), (1440, 1440, 7),
+                                                (1440, 1440, 4), (1441, 1799, 8)])
+        retry.device.fetchData[.sleepSession] = (ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!), bytes)
+        retry.run()
+        XCTAssertNotNil(retry.sync.message)
+        XCTAssertEqual(retry.sync.diagnosticDetails, "stageOverlap")
+        XCTAssertEqual(retry.sync.archive.sessions.first?.segments, baseline.sync.archive.sessions.first?.segments)
+        XCTAssertEqual(retry.sync.archive.cursors["72"], baseline.sync.archive.cursors["72"])
+    }
+
     @MainActor func testDirectSyncRetainsNapAndExplicitSessionBoundaryOnReplay() throws {
         let directory = try directory(), rig = rig(directory)
         let start = ZeppFetchTimestamp.encode(midnight, timeZone: TimeZone(secondsFromGMT: 0)!)
